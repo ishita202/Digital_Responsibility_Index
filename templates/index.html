@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="hero-section text-center py-5">
+    <div class="container">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-shield-alt text-primary"></i> Digital Awareness Platform
+        </h1>
+        <p class="lead mb-4">
+            Test your knowledge about digital privacy, data security, and AI ethics. 
+            Learn how to protect your data and make informed decisions online.
+        </p>
+        <div class="row mt-5">
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-body text-center">
+                        <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Learn</h5>
+                        <p class="card-text">Access comprehensive resources about digital privacy and data security.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-body text-center">
+                        <i class="fas fa-question-circle fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Quiz</h5>
+                        <p class="card-text">Test your knowledge with interactive quizzes on digital awareness topics.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card h-100 shadow">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Track Progress</h5>
+                        <p class="card-text">Monitor your performance and see your improvement over time.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mt-5">
+            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+                <i class="fas fa-user-plus me-2"></i>Get Started
+            </a>
+            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                <i class="fas fa-sign-in-alt me-2"></i>Login
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6">
+            <h3>About This Platform</h3>
+            <p>
+                This platform is designed to help students and individuals understand digital privacy, 
+                data security, and AI ethics. Based on comprehensive survey analysis, we provide 
+                personalized learning resources and assessments to improve your digital awareness.
+            </p>
+        </div>
+        <div class="col-md-6">
+            <h3>Features</h3>
+            <ul class="list-unstyled">
+                <li><i class="fas fa-check text-success me-2"></i>Interactive quizzes on digital privacy</li>
+                <li><i class="fas fa-check text-success me-2"></i>Personalized learning recommendations</li>
+                <li><i class="fas fa-check text-success me-2"></i>Performance tracking and analytics</li>
+                <li><i class="fas fa-check text-success me-2"></i>Comprehensive learning resources</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

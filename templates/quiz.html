@@ -1,0 +1,244 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2><i class="fas fa-question-circle me-2"></i>{{ quiz_type.name }} Quiz</h2>
+                <p class="text-muted">{{ quiz_type.description }}</p>
+            </div>
+            <div class="text-end">
+                <div class="card bg-{{ quiz_type.color }} text-white">
+                    <div class="card-body p-3">
+                        <h5 class="mb-0" id="timer">00:00</h5>
+                        <small>Time Remaining</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card shadow">
+    <div class="card-header bg-primary text-white">
+        <h5>Quiz Questions</h5>
+    </div>
+    <div class="card-body">
+        <form id="quizForm">
+            {% for question in questions %}
+            <div class="mb-4 p-3 border rounded question-item" data-question-id="{{ question.id }}">
+                <h6 class="mb-3">
+                    <span class="badge bg-primary me-2">{{ loop.index }}</span>
+                    {{ question.question_text }}
+                </h6>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_a" value="A" required>
+                    <label class="form-check-label" for="q{{ question.id }}_a">
+                        A. {{ question.option_a }}
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_b" value="B" required>
+                    <label class="form-check-label" for="q{{ question.id }}_b">
+                        B. {{ question.option_b }}
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_c" value="C" required>
+                    <label class="form-check-label" for="q{{ question.id }}_c">
+                        C. {{ question.option_c }}
+                    </label>
+                </div>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="radio" name="question_{{ question.id }}" id="q{{ question.id }}_d" value="D" required>
+                    <label class="form-check-label" for="q{{ question.id }}_d">
+                        D. {{ question.option_d }}
+                    </label>
+                </div>
+                {% if question.explanation %}
+                <div class="explanation mt-2" style="display: none;">
+                    <div class="alert alert-info">
+                        <strong>Explanation:</strong> {{ question.explanation }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endfor %}
+            
+            <div class="text-center mt-4">
+                <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                    <i class="fas fa-paper-plane me-2"></i>Submit Quiz
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg ms-2" onclick="window.location.href='{{ url_for('quiz_select') }}'">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="resultModal" class="modal fade" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Quiz Results</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="resultContent"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let timeRemaining = {{ quiz_type.time_limit }}; // Time limit in seconds
+let timeTaken = 0;
+let timerInterval;
+
+// Start timer
+function startTimer() {
+    // Initialize display
+    const minutes = Math.floor(timeRemaining / 60);
+    const seconds = timeRemaining % 60;
+    document.getElementById('timer').textContent = 
+        String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    
+    timerInterval = setInterval(function() {
+        timeTaken++;
+        timeRemaining--;
+        
+        if (timeRemaining <= 0) {
+            clearInterval(timerInterval);
+            // Auto-submit when time runs out
+            alert('Time is up! Submitting your quiz...');
+            document.getElementById('quizForm').dispatchEvent(new Event('submit'));
+            return;
+        }
+        
+        // Update timer display
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('timer').textContent = 
+            String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        
+        // Change color when time is running low
+        const timerCard = document.querySelector('.card.bg-{{ quiz_type.color }}');
+        if (timerCard) {
+            if (timeRemaining <= 60) {
+                timerCard.classList.remove('bg-{{ quiz_type.color }}');
+                timerCard.classList.add('bg-danger');
+            }
+        }
+    }, 1000);
+}
+
+// Start timer when page loads
+window.addEventListener('load', startTimer);
+
+document.getElementById('quizForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    clearInterval(timerInterval);
+    
+    // Disable submit button
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+    
+    const formData = new FormData(this);
+    const answers = {};
+    
+    // Collect all answers
+    {% for question in questions %}
+    const q{{ question.id }} = formData.get('question_{{ question.id }}');
+    if (q{{ question.id }}) {
+        answers['{{ question.id }}'] = q{{ question.id }};
+    }
+    {% endfor %}
+    
+    try {
+        const response = await fetch('{{ url_for("submit_quiz") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                answers: answers,
+                quiz_type: '{{ quiz_type.name }}',
+                time_taken: timeTaken,
+                time_limit: {{ quiz_type.time_limit }}
+            })
+        });
+        
+        const result = await response.json();
+        
+        // Show results
+        const resultContent = document.getElementById('resultContent');
+        const percentage = result.percentage;
+        let badgeClass = 'bg-danger';
+        if (percentage >= 70) badgeClass = 'bg-success';
+        else if (percentage >= 50) badgeClass = 'bg-warning';
+        
+        const timeMinutes = Math.floor(result.time_taken / 60);
+        const timeSeconds = result.time_taken % 60;
+        
+        resultContent.innerHTML = `
+            <div class="text-center mb-4">
+                <h2>Your Score: ${result.score}/${result.total}</h2>
+                <h3><span class="badge ${badgeClass}">${percentage.toFixed(1)}%</span></h3>
+                <p class="text-muted">
+                    <i class="fas fa-clock me-1"></i>Time Taken: ${timeMinutes}:${String(timeSeconds).padStart(2, '0')}
+                </p>
+            </div>
+            <div class="alert ${percentage >= 70 ? 'alert-success' : percentage >= 50 ? 'alert-warning' : 'alert-danger'}">
+                ${percentage >= 70 ? 'Excellent! You have a good understanding of {{ quiz_type.name }}.' : 
+                  percentage >= 50 ? 'Good effort! Keep learning to improve your score.' : 
+                  'Keep learning! Check out our learning resources to improve your knowledge.'}
+            </div>
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('resultModal'));
+        modal.show();
+        
+        // Show explanations
+        {% for question in questions %}
+        const q{{ question.id }}Item = document.querySelector('[data-question-id="{{ question.id }}"]');
+        const userAnswer{{ question.id }} = answers['{{ question.id }}'];
+        const correctAnswer{{ question.id }} = '{{ question.correct_answer }}';
+        
+        if (userAnswer{{ question.id }}) {
+            const explanation{{ question.id }} = q{{ question.id }}Item.querySelector('.explanation');
+            if (explanation{{ question.id }}) {
+                explanation{{ question.id }}.style.display = 'block';
+            }
+            
+            // Highlight correct/incorrect answers
+            const userRadio{{ question.id }} = document.getElementById('q{{ question.id }}_' + userAnswer{{ question.id }}.toLowerCase());
+            const correctRadio{{ question.id }} = document.getElementById('q{{ question.id }}_' + correctAnswer{{ question.id }}.toLowerCase());
+            
+            if (userAnswer{{ question.id }} === correctAnswer{{ question.id }}) {
+                userRadio{{ question.id }}.parentElement.classList.add('text-success', 'fw-bold');
+            } else {
+                userRadio{{ question.id }}.parentElement.classList.add('text-danger');
+                correctRadio{{ question.id }}.parentElement.classList.add('text-success', 'fw-bold');
+            }
+        }
+        {% endfor %}
+        
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while submitting the quiz. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit Quiz';
+    }
+});
+</script>
+{% endblock %}
+

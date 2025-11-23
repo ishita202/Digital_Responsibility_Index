@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-question-circle me-2"></i>Choose Your Quiz</h2>
+        <p class="text-muted">Select a quiz type that matches your interests and challenge level.</p>
+    </div>
+</div>
+
+<div class="row">
+    {% for quiz_type in quiz_types %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm quiz-type-card" style="border-left: 4px solid var(--bs-{{ quiz_type.color }});">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="bg-{{ quiz_type.color }} text-white rounded-circle p-3 me-3">
+                        <i class="fas {{ quiz_type.icon }} fa-2x"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-0">{{ quiz_type.name }}</h5>
+                        <span class="badge bg-{{ quiz_type.color }}">{{ quiz_type.difficulty }}</span>
+                    </div>
+                </div>
+                <p class="card-text text-muted">{{ quiz_type.description }}</p>
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-clock me-1"></i>{{ quiz_type.time_limit // 60 }} minutes
+                        <span class="ms-3"><i class="fas fa-question me-1"></i>{{ quiz_type.question_count }} questions</span>
+                    </small>
+                </div>
+                <a href="{{ url_for('quiz', quiz_type_name=quiz_type.name) }}" class="btn btn-{{ quiz_type.color }} w-100">
+                    <i class="fas fa-play me-2"></i>Start Quiz
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5><i class="fas fa-info-circle me-2"></i>Quiz Tips</h5>
+                <ul class="mb-0">
+                    <li>Each quiz has a time limit - answer quickly but accurately!</li>
+                    <li>You'll see explanations after submitting your answers</li>
+                    <li>Your scores are tracked to show your progress</li>
+                    <li>Try different quiz types to improve in all areas</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.quiz-type-card {
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.quiz-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.15) !important;
+}
+</style>
+{% endblock %}
+

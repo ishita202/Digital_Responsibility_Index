@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-home me-2"></i>Dashboard</h2>
+        <p class="text-muted">Welcome back, {{ current_user.username }}!</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-question-circle me-2"></i>Total Quizzes</h5>
+                <h2 class="card-text">{{ total_attempts }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Average Score</h5>
+                <h2 class="card-text">{{ "%.1f"|format(avg_score) }}%</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-book me-2"></i>Learning Resources</h5>
+                <h2 class="card-text">Available</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-history me-2"></i>Recent Quiz Attempts</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_attempts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Score</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in recent_attempts %}
+                                <tr>
+                                    <td>{{ attempt.completed_at | localtime }}</td>
+                                    <td>{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                                    <td>
+                                        <span class="badge {% if attempt.percentage >= 70 %}bg-success{% elif attempt.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ "%.1f"|format(attempt.percentage) }}%
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No quiz attempts yet. <a href="{{ url_for('quiz') }}">Take your first quiz!</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_activities %}
+                    <div class="list-group">
+                        {% for activity in recent_activities %}
+                        <div class="list-group-item">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">
+                                    <i class="fas fa-{{ 'check-circle' if activity.activity_type == 'quiz_completed' else 'sign-in-alt' if activity.activity_type == 'login' else 'user' }} me-2"></i>
+                                    {{ activity.description }}
+                                </h6>
+                                <small class="text-muted">{{ activity.created_at | localtime }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No recent activity.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('quiz') }}" class="btn btn-primary me-2">
+                    <i class="fas fa-question-circle me-2"></i>Take Quiz
+                </a>
+                <a href="{{ url_for('learn') }}" class="btn btn-success me-2">
+                    <i class="fas fa-book me-2"></i>Learn More
+                </a>
+                <a href="{{ url_for('profile') }}" class="btn btn-info">
+                    <i class="fas fa-user me-2"></i>View Profile
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

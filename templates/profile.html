@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h2><i class="fas fa-user me-2"></i>My Profile</h2>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-info-circle me-2"></i>Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Username:</strong> {{ current_user.username }}</p>
+                <p><strong>Email:</strong> {{ current_user.email }}</p>
+                {% if current_user.age_range %}
+                <p><strong>Age Range:</strong> {{ current_user.age_range }}</p>
+                {% endif %}
+                {% if current_user.gender %}
+                <p><strong>Gender:</strong> {{ current_user.gender }}</p>
+                {% endif %}
+                {% if current_user.academic_stream %}
+                <p><strong>Academic Stream:</strong> {{ current_user.academic_stream }}</p>
+                {% endif %}
+                {% if current_user.year_of_study %}
+                <p><strong>Year of Study:</strong> {{ current_user.year_of_study }}</p>
+                {% endif %}
+                <p><strong>Member Since:</strong> {{ current_user.created_at | localtime_date }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-chart-bar me-2"></i>Quiz Performance History</h5>
+            </div>
+            <div class="card-body">
+                {% if attempts %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Score</th>
+                                    <th>Percentage</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for attempt in attempts %}
+                                <tr>
+                                    <td>{{ attempt.completed_at | localtime }}</td>
+                                    <td>{{ attempt.score }}/{{ attempt.total_questions }}</td>
+                                    <td>{{ "%.1f"|format(attempt.percentage) }}%</td>
+                                    <td>
+                                        <span class="badge {% if attempt.percentage >= 70 %}bg-success{% elif attempt.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {% if attempt.percentage >= 70 %}Excellent{% elif attempt.percentage >= 50 %}Good{% else %}Needs Improvement{% endif %}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted">No quiz attempts yet. <a href="{{ url_for('quiz') }}">Take your first quiz!</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
