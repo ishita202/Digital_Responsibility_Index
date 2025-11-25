@@ -16,6 +16,9 @@ import pickle
 import pytz
 from functools import wraps
 
+SURVEY_CSV_PATH = 'survey_data_backup.csv'
+SURVEY_XLSX_PATH = 'Project Survey (Responses).xlsx'
+
 # Import ML model
 try:
     from ml_model import DigitalAwarenessML
@@ -83,6 +86,137 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
+def load_awareness_dataframe():
+    """Load survey responses from CSV or Excel for visualization."""
+    if os.path.exists(SURVEY_CSV_PATH):
+        return pd.read_csv(SURVEY_CSV_PATH)
+    if os.path.exists(SURVEY_XLSX_PATH):
+        try:
+            df = pd.read_excel(SURVEY_XLSX_PATH)
+            df.to_csv(SURVEY_CSV_PATH, index=False)
+            return df
+        except ImportError as exc:
+            print("openpyxl is required to read Excel files:", exc)
+            return None
+    return None
+
+def map_survey_columns(df):
+    """Standardize survey column names for downstream processing."""
+    column_mapping = {}
+    for col in df.columns:
+        col_lower = col.lower()
+        if 'age' in col_lower and 'range' in col_lower:
+            column_mapping[col] = 'Age_Range'
+        elif 'gender' in col_lower:
+            column_mapping[col] = 'Gender'
+        elif ('educational' in col_lower or 'academic' in col_lower) and 'background' in col_lower:
+            column_mapping[col] = 'Academic_Stream'
+        elif 'current level of study' in col_lower or ('level' in col_lower and 'study' in col_lower):
+            column_mapping[col] = 'Year_of_Study'
+        elif 'privacy policy' in col_lower:
+            column_mapping[col] = 'Privacy_Policy_Reading'
+        elif 'app permissions' in col_lower:
+            column_mapping[col] = 'App_Permissions_Review'
+        elif 'uninstalled' in col_lower and 'permissions' in col_lower:
+            column_mapping[col] = 'Uninstall_Due_Privacy'
+        elif 'different passwords' in col_lower:
+            column_mapping[col] = 'Different_Passwords'
+        elif 'social media app' in col_lower and 'microphone' in col_lower:
+            column_mapping[col] = 'Social_App_Permissions'
+        elif 'privacy settings' in col_lower and 'frequency' in col_lower:
+            column_mapping[col] = 'Privacy_Settings_Review'
+        elif 'true/false' in col_lower and 'incognito' in col_lower:
+            column_mapping[col] = 'Knowledge_Incognito_ISP'
+        elif 'true/false' in col_lower and 'anonymous' in col_lower:
+            column_mapping[col] = 'Knowledge_Anonymous_Trace'
+        elif 'true/false' in col_lower and 'social media' in col_lower:
+            column_mapping[col] = 'Knowledge_SocialMedia_Messages'
+    return df.rename(columns=column_mapping)
+
+def interpret_survey_boolean(value):
+    """Normalize survey responses (textual or numeric) to boolean True/False."""
+    if pd.isna(value):
+        return None
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+    normalized = str(value).strip().lower()
+    true_tokens = {'true', 't', 'a', 'correct', 'yes', 'y', '1', '1.0'}
+    false_tokens = {'false', 'f', 'b', 'incorrect', 'no', 'n', '0', '0.0'}
+    if normalized in true_tokens:
+        return True
+    if normalized in false_tokens:
+        return False
+    return None
+
+def calculate_row_knowledge_score(row):
+    score = 0
+    total = 0
+    for col_name, desired in (
+        ('Knowledge_Incognito_ISP', False),
+        ('Knowledge_Anonymous_Trace', False),
+        ('Knowledge_SocialMedia_Messages', True),
+    ):
+        if col_name in row:
+            total += 1
+            answer = interpret_survey_boolean(row[col_name])
+            if answer is not None and answer is desired:
+                score += 1
+    percentage = (score / total) * 100 if total else 0
+    return percentage
+
+def build_awareness_insights():
+    """Load survey dataset and compute aggregated awareness metrics."""
+    df = load_awareness_dataframe()
+    if df is None or df.empty:
+        return None
+    df = map_survey_columns(df.copy())
+    df['Knowledge_Score'] = df.apply(calculate_row_knowledge_score, axis=1)
+    df['Knowledge_Level'] = pd.cut(
+        df['Knowledge_Score'],
+        bins=[-0.1, 40, 70, 100],
+        labels=['Low', 'Medium', 'High']
+    )
+    summary = {
+        'respondent_count': int(len(df)),
+        'average_score': round(float(df['Knowledge_Score'].mean()), 1),
+        'median_score': round(float(df['Knowledge_Score'].median()), 1),
+        'high_percentage': round(float((df['Knowledge_Level'] == 'High').mean() * 100), 1)
+    }
+    score_distribution = {
+        'Low': int((df['Knowledge_Score'] < 40).sum()),
+        'Medium': int(((df['Knowledge_Score'] >= 40) & (df['Knowledge_Score'] < 70)).sum()),
+        'High': int((df['Knowledge_Score'] >= 70).sum())
+    }
+    avg_by_age = df.groupby('Age_Range')['Knowledge_Score'].mean().dropna().round(1).to_dict()
+    avg_by_gender = df.groupby('Gender')['Knowledge_Score'].mean().dropna().round(1).to_dict()
+    privacy_policy_counts = df['Privacy_Policy_Reading'].value_counts().to_dict() if 'Privacy_Policy_Reading' in df else {}
+    permissions_counts = df['App_Permissions_Review'].value_counts().to_dict() if 'App_Permissions_Review' in df else {}
+    password_counts = df['Different_Passwords'].value_counts().to_dict() if 'Different_Passwords' in df else {}
+    timeline = []
+    if 'Timestamp' in df.columns:
+        timeline_series = (
+            pd.to_datetime(df['Timestamp'], errors='coerce')
+            .to_frame('Timestamp')
+            .join(df['Knowledge_Score'])
+            .dropna(subset=['Timestamp'])
+        )
+        if not timeline_series.empty:
+            timeline_grouped = timeline_series.groupby(timeline_series['Timestamp'].dt.date)['Knowledge_Score'].mean().round(1)
+            timeline = [{'date': str(idx), 'score': float(val)} for idx, val in timeline_grouped.items()]
+    return {
+        'summary': summary,
+        'score_distribution': score_distribution,
+        'avg_by_age': avg_by_age,
+        'avg_by_gender': avg_by_gender,
+        'privacy_policy_counts': privacy_policy_counts,
+        'permissions_counts': permissions_counts,
+        'password_counts': password_counts,
+        'timeline': timeline,
+        'raw_scores': df['Knowledge_Score'].fillna(0).round(1).tolist()
+    }
 # Google Sheets Configuration
 SHEET_URL = 'https://docs.google.com/spreadsheets/d/1ZoZ7ZQXVLnk5JokphSQK0tqIT9IshB2NCg9_UCiAw6s/edit?gid=1620608954#gid=1620608954'
 SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
@@ -825,22 +959,107 @@ def dashboard():
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
     
-    # Get user statistics
-    total_attempts = QuizAttempt.query.filter_by(user_id=current_user.id).count()
-    recent_attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.completed_at.desc()).limit(5).all()
-    
-    # Calculate average score
-    attempts = QuizAttempt.query.filter_by(user_id=current_user.id).all()
-    avg_score = np.mean([a.percentage for a in attempts]) if attempts else 0
-    
-    # Get recent activities
+    # Fetch attempts and activities once
+    attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.completed_at.desc()).all()
+    recent_attempts = attempts[:5]
     recent_activities = UserActivity.query.filter_by(user_id=current_user.id).order_by(UserActivity.created_at.desc()).limit(10).all()
-    
-    return render_template('dashboard.html', 
-                         total_attempts=total_attempts,
-                         recent_attempts=recent_attempts,
-                         avg_score=avg_score,
-                         recent_activities=recent_activities)
+
+    total_attempts = len(attempts)
+    avg_score = float(np.mean([a.percentage for a in attempts])) if attempts else 0.0
+    best_score = max([a.percentage for a in attempts], default=0)
+    total_time_spent = sum([(a.time_taken or 0) for a in attempts])
+
+    # Score history for charts / lists (reverse chronological limited)
+    score_history = [
+        {
+            'label': a.completed_at.strftime('%d %b') if a.completed_at else f'Attempt {idx + 1}',
+            'percentage': a.percentage
+        }
+        for idx, a in enumerate(reversed(attempts[-10:]))
+    ]
+
+    # Quiz type breakdown
+    quiz_type_stats = []
+    if attempts:
+        stats_map = {}
+        for attempt in attempts:
+            key = attempt.quiz_type or 'General'
+            entry = stats_map.setdefault(key, {'quiz_type': key, 'count': 0, 'scores': []})
+            entry['count'] += 1
+            entry['scores'].append(attempt.percentage)
+        for entry in stats_map.values():
+            entry['average'] = float(np.mean(entry['scores'])) if entry['scores'] else 0.0
+            quiz_type_stats.append(entry)
+        quiz_type_stats.sort(key=lambda x: x['count'], reverse=True)
+
+    # Activity streak (days with activity)
+    today = datetime.utcnow().date()
+    streak = 0
+    check_date = today
+    for _ in range(30):
+        day_activities = UserActivity.query.filter(
+            UserActivity.user_id == current_user.id,
+            db.func.date(UserActivity.created_at) == check_date
+        ).first()
+        if day_activities:
+            streak += 1
+            check_date = check_date - timedelta(days=1)
+        else:
+            break
+
+    # ML-driven knowledge insights
+    knowledge_level = None
+    knowledge_confidence = None
+    knowledge_recommendations = []
+    ml = get_ml_model()
+    if ml:
+        try:
+            user_data = {
+                'Age_Range': current_user.age_range or '18-21',
+                'Gender': current_user.gender or 'Male',
+                'Academic_Stream': current_user.academic_stream or 'B.Tech',
+                'Year_of_Study': current_user.year_of_study or '2nd year',
+                'Privacy_Policy_Reading': 'Sometimes',
+                'App_Permissions_Review': 'Sometimes',
+                'Different_Passwords': 'Yes'
+            }
+
+            if attempts:
+                if avg_score < 40:
+                    user_data['Privacy_Policy_Reading'] = 'Never'
+                    user_data['App_Permissions_Review'] = 'Never'
+                elif avg_score < 70:
+                    user_data['Privacy_Policy_Reading'] = 'Sometimes'
+                    user_data['App_Permissions_Review'] = 'Sometimes'
+                else:
+                    user_data['Privacy_Policy_Reading'] = 'Often'
+                    user_data['App_Permissions_Review'] = 'Often'
+
+            knowledge_level, confidence = ml.predict_knowledge_level(user_data)
+            knowledge_confidence = round(confidence * 100, 1)
+            knowledge_recommendations = ml.get_recommendations(knowledge_level)
+        except Exception as e:
+            print(f"Error getting ML recommendations: {e}")
+
+    # Featured learning resources
+    featured_resources = LearningResource.query.limit(3).all()
+
+    return render_template(
+        'dashboard.html',
+        total_attempts=total_attempts,
+        recent_attempts=recent_attempts,
+        avg_score=avg_score,
+        best_score=best_score,
+        total_time_spent=total_time_spent,
+        score_history=score_history,
+        quiz_type_stats=quiz_type_stats,
+        recent_activities=recent_activities,
+        current_streak=streak,
+        knowledge_level=knowledge_level,
+        knowledge_confidence=knowledge_confidence,
+        knowledge_recommendations=knowledge_recommendations,
+        featured_resources=featured_resources
+    )
 
 @app.route('/profile')
 @login_required
@@ -894,6 +1113,33 @@ def learn():
             ]
     
     return render_template('learn.html', resources=resources, recommendations=recommendations)
+
+@app.route('/visualizations')
+@login_required
+def visualizations():
+    """Show awareness index visualizations derived from survey data."""
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('dashboard'))
+    
+    insights = build_awareness_insights()
+    if insights is None:
+        flash('Survey dataset not found. Upload survey_data_backup.csv or Project Survey (Responses).xlsx.')
+        return render_template('visualizations.html', data_available=False)
+    
+    return render_template(
+        'visualizations.html',
+        data_available=True,
+        summary=insights['summary'],
+        score_distribution=json.dumps(insights['score_distribution']),
+        avg_by_age=json.dumps(insights['avg_by_age']),
+        avg_by_gender=json.dumps(insights['avg_by_gender']),
+        privacy_policy_counts=json.dumps(insights['privacy_policy_counts']),
+        permissions_counts=json.dumps(insights['permissions_counts']),
+        password_counts=json.dumps(insights['password_counts']),
+        timeline=json.dumps(insights['timeline']),
+        raw_scores=json.dumps(insights['raw_scores'])
+    )
 
 @app.route('/quiz')
 @login_required
@@ -1021,28 +1267,64 @@ def analytics():
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    # Daily activity
-    activities = UserActivity.query.all()
+    # Daily activity and activity type breakdown
+    activities = UserActivity.query.order_by(UserActivity.created_at).all()
     daily_activity = {}
+    activity_type_counts = {}
     for activity in activities:
-        date = activity.created_at.date()
-        daily_activity[date] = daily_activity.get(date, 0) + 1
+        date_key = activity.created_at.date().isoformat()
+        daily_activity[date_key] = daily_activity.get(date_key, 0) + 1
+        activity_type = activity.activity_type or 'other'
+        activity_type_counts[activity_type] = activity_type_counts.get(activity_type, 0) + 1
     
-        # Quiz performance over time (convert to local timezone)
-        attempts = QuizAttempt.query.order_by(QuizAttempt.completed_at).all()
-        quiz_performance = {}
-        for attempt in attempts:
+    # Quiz performance and distributions
+    attempts = QuizAttempt.query.order_by(QuizAttempt.completed_at).all()
+    quiz_performance = {}
+    quiz_type_distribution = {}
+    score_distribution = {'Low': 0, 'Medium': 0, 'High': 0}
+    
+    for attempt in attempts:
+        if attempt.completed_at:
             local_dt = utc_to_local(attempt.completed_at)
-            date = local_dt.date()
-            if date not in quiz_performance:
-                quiz_performance[date] = []
-            quiz_performance[date].append(attempt.percentage)
+            date_key = local_dt.date().isoformat()
+            quiz_performance.setdefault(date_key, []).append(attempt.percentage)
+        
+        quiz_type = attempt.quiz_type or 'General'
+        quiz_type_distribution[quiz_type] = quiz_type_distribution.get(quiz_type, 0) + 1
+        
+        if attempt.percentage < 40:
+            score_distribution['Low'] += 1
+        elif attempt.percentage < 70:
+            score_distribution['Medium'] += 1
+        else:
+            score_distribution['High'] += 1
     
-    quiz_avg = {str(k): np.mean(v) for k, v in quiz_performance.items()}
+    quiz_avg = {date: float(np.mean(scores)) for date, scores in quiz_performance.items()}
+    
+    # Top users by average score
+    user_stats = []
+    users = User.query.all()
+    for user in users:
+        user_attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
+        if not user_attempts:
+            continue
+        avg_score = float(np.mean([a.percentage for a in user_attempts]))
+        user_stats.append({
+            'username': user.username,
+            'avg_score': avg_score,
+            'attempts': len(user_attempts)
+        })
+    
+    user_stats.sort(key=lambda u: u['avg_score'], reverse=True)
+    top_users = user_stats[:5]
     
     return jsonify({
-        'daily_activity': {str(k): v for k, v in daily_activity.items()},
-        'quiz_performance': quiz_avg
+        'daily_activity': daily_activity,
+        'quiz_performance': quiz_avg,
+        'quiz_type_distribution': quiz_type_distribution,
+        'score_distribution': score_distribution,
+        'activity_type_counts': activity_type_counts,
+        'top_users': top_users
     })
 
 @app.route('/api/recommendations')

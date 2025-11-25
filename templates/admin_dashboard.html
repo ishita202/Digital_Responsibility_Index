@@ -2,9 +2,14 @@
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col-md-12">
+    <div class="col-md-8">
         <h2><i class="fas fa-cog me-2"></i>Admin Dashboard</h2>
         <p class="text-muted">Analytics and user activity overview</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('visualizations') }}" class="btn btn-outline-primary">
+            <i class="fas fa-chart-pie me-2"></i>Awareness Visualizations
+        </a>
     </div>
 </div>
 
@@ -124,13 +129,69 @@
 </div>
 
 <div class="row mt-4">
-    <div class="col-md-12">
-        <div class="card shadow">
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow h-100">
             <div class="card-header bg-success text-white">
-                <h5><i class="fas fa-chart-bar me-2"></i>Analytics</h5>
+                <h5><i class="fas fa-chart-line me-2"></i>Daily Activity Trend</h5>
             </div>
             <div class="card-body">
-                <canvas id="analyticsChart" width="400" height="100"></canvas>
+                <canvas id="dailyActivityChart" height="120"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-tasks me-2"></i>Activity Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="activityTypeChart" height="220"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-bullseye me-2"></i>Quiz Performance Over Time</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="quizPerformanceChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-warning text-dark">
+                <h5><i class="fas fa-layer-group me-2"></i>Quiz Type Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="quizTypeChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5><i class="fas fa-signal me-2"></i>Score Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="scoreDistributionChart" height="180"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow h-100">
+            <div class="card-header bg-dark text-white">
+                <h5><i class="fas fa-trophy me-2"></i>Top Performers</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="topUsersChart" height="180"></canvas>
             </div>
         </div>
     </div>
@@ -157,34 +218,122 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-// Fetch analytics data
+const colorPalette = [
+    '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f',
+    '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+];
+
 fetch('{{ url_for("analytics") }}')
     .then(response => response.json())
     .then(data => {
-        const ctx = document.getElementById('analyticsChart').getContext('2d');
-        
-        // Prepare data for chart
-        const dates = Object.keys(data.daily_activity).sort();
-        const activities = dates.map(date => data.daily_activity[date] || 0);
-        
-        new Chart(ctx, {
+        const sortedActivityDates = Object.keys(data.daily_activity).sort();
+        const dailyActivityValues = sortedActivityDates.map(d => data.daily_activity[d]);
+        new Chart(document.getElementById('dailyActivityChart'), {
             type: 'line',
             data: {
-                labels: dates,
+                labels: sortedActivityDates,
                 datasets: [{
-                    label: 'Daily Activities',
-                    data: activities,
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    tension: 0.1
+                    label: 'Total Activities',
+                    data: dailyActivityValues,
+                    borderColor: '#4e79a7',
+                    backgroundColor: 'rgba(78, 121, 167, 0.2)',
+                    tension: 0.3,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
                 scales: {
-                    y: {
-                        beginAtZero: true
-                    }
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        const activityTypes = Object.keys(data.activity_type_counts);
+        const activityCounts = activityTypes.map(type => data.activity_type_counts[type]);
+        new Chart(document.getElementById('activityTypeChart'), {
+            type: 'doughnut',
+            data: {
+                labels: activityTypes,
+                datasets: [{
+                    data: activityCounts,
+                    backgroundColor: colorPalette.slice(0, activityTypes.length)
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const sortedPerfDates = Object.keys(data.quiz_performance).sort();
+        const perfValues = sortedPerfDates.map(d => data.quiz_performance[d]);
+        new Chart(document.getElementById('quizPerformanceChart'), {
+            type: 'line',
+            data: {
+                labels: sortedPerfDates,
+                datasets: [{
+                    label: 'Average %',
+                    data: perfValues,
+                    borderColor: '#59a14f',
+                    backgroundColor: 'rgba(89, 161, 79, 0.2)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+
+        const quizTypes = Object.keys(data.quiz_type_distribution);
+        const quizTypeCounts = quizTypes.map(type => data.quiz_type_distribution[type]);
+        new Chart(document.getElementById('quizTypeChart'), {
+            type: 'pie',
+            data: {
+                labels: quizTypes,
+                datasets: [{
+                    data: quizTypeCounts,
+                    backgroundColor: colorPalette.slice(0, quizTypes.length)
+                }]
+            },
+            options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+        });
+
+        const scoreLevels = Object.keys(data.score_distribution);
+        const scoreCounts = scoreLevels.map(level => data.score_distribution[level]);
+        new Chart(document.getElementById('scoreDistributionChart'), {
+            type: 'bar',
+            data: {
+                labels: scoreLevels,
+                datasets: [{
+                    label: 'Users',
+                    data: scoreCounts,
+                    backgroundColor: '#edc949'
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        const topUsers = data.top_users || [];
+        new Chart(document.getElementById('topUsersChart'), {
+            type: 'bar',
+            data: {
+                labels: topUsers.map(u => u.username),
+                datasets: [{
+                    label: 'Average %',
+                    data: topUsers.map(u => u.avg_score),
+                    backgroundColor: '#e15759'
+                }]
+            },
+            options: {
+                responsive: true,
+                indexAxis: 'y',
+                scales: {
+                    x: { beginAtZero: true, max: 100 }
                 }
             }
         });

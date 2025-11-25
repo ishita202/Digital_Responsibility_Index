@@ -6,7 +6,7 @@ Predicts user knowledge levels and provides personalized recommendations
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.preprocessing import LabelEncoder
 import pickle
 import os
@@ -21,7 +21,7 @@ class DigitalAwarenessML:
         """Load survey data from CSV file"""
         if os.path.exists(csv_path):
             df = pd.read_csv(csv_path)
-            print(f"✅ Loaded {len(df)} survey responses from {csv_path}")
+            print(f"[INFO] Loaded {len(df)} survey responses from {csv_path}")
             
             # Try to calculate knowledge scores if not present
             if 'Knowledge_Score' not in df.columns and 'Score' not in df.columns:
@@ -61,7 +61,7 @@ class DigitalAwarenessML:
             
             return df
         else:
-            print(f"⚠️  Warning: {csv_path} not found. Using sample data.")
+            print(f"[WARN] Warning: {csv_path} not found. Using sample data.")
             return self.generate_sample_data()
     
     def generate_sample_data(self):
@@ -131,12 +131,43 @@ class DigitalAwarenessML:
             self.label_encoders['Knowledge_Level'] = LabelEncoder()
         y_encoded = self.label_encoders['Knowledge_Level'].fit_transform(y)
         
-        # Split data
-        X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42)
+        # Split data with stratification when possible
+        unique_classes, class_counts = np.unique(y_encoded, return_counts=True)
+        stratify_labels = y_encoded if len(unique_classes) > 1 else None
+        test_size = 0.25 if len(X) >= 20 else 0.2
+        X_train, X_test, y_train, y_test = train_test_split(
+            X,
+            y_encoded,
+            test_size=test_size,
+            random_state=42,
+            stratify=stratify_labels
+        )
+        
+        # Optional cross-validation on the full dataset
+        min_class_count = class_counts.min()
+        can_run_cv = len(X) >= 15 and len(unique_classes) > 1 and min_class_count >= 3
+        
+        if can_run_cv:
+            folds = min(5, min_class_count)
+            cv = StratifiedKFold(n_splits=folds, shuffle=True, random_state=42)
+        else:
+            cv = None
         
         # Train model
-        self.model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=10)
-        self.model.fit(X_train, y_train)
+        model = RandomForestClassifier(
+            n_estimators=150,
+            random_state=42,
+            max_depth=12,
+            class_weight='balanced'
+        )
+        
+        if cv is not None:
+            cv_scores = cross_val_score(model, X, y_encoded, cv=cv)
+            print(f"Cross-val accuracy ({cv.n_splits} folds): {cv_scores.mean():.2%} +/- {cv_scores.std():.2%}")
+        else:
+            print("Skipping cross-validation (not enough samples per class).")
+        
+        self.model = model.fit(X_train, y_train)
         
         # Evaluate
         train_score = self.model.score(X_train, y_train)

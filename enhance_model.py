@@ -9,6 +9,61 @@ from ml_model import DigitalAwarenessML
 from app import app, db, QuizAttempt, User
 import os
 
+
+def load_primary_survey_dataframe(
+    csv_path='survey_data_backup.csv',
+    excel_path='Project Survey (Responses).xlsx'
+):
+    """
+    Load survey responses from CSV, or convert from Excel if needed.
+    """
+    if os.path.exists(csv_path):
+        print(f"[INFO] Loading survey CSV: {csv_path}")
+        return pd.read_csv(csv_path)
+
+    if os.path.exists(excel_path):
+        print(f"[INFO] Converting Excel survey file '{excel_path}' to CSV")
+        try:
+            df = pd.read_excel(excel_path)
+        except ImportError as exc:
+            raise ImportError(
+                "Reading Excel files requires the 'openpyxl' package. "
+                "Install it with 'pip install openpyxl' and re-run the script."
+            ) from exc
+        df.to_csv(csv_path, index=False)
+        print(f"[INFO] Saved converted CSV to {csv_path}")
+        return df
+
+    raise FileNotFoundError(
+        f"No survey sources found. Missing '{csv_path}' and '{excel_path}'."
+    )
+
+def interpret_boolean_response(value):
+    """
+    Normalize survey responses (textual or numeric) to boolean True/False.
+    Returns None when the value cannot be interpreted.
+    """
+    if pd.isna(value):
+        return None
+
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        if value == 1:
+            return True
+        if value == 0:
+            return False
+
+    normalized = str(value).strip().lower()
+    true_tokens = {'true', 't', 'a', 'correct', 'yes', 'y', '1', '1.0'}
+    false_tokens = {'false', 'f', 'b', 'incorrect', 'no', 'n', '0', '0.0'}
+
+    if normalized in true_tokens:
+        return True
+    if normalized in false_tokens:
+        return False
+
+    return None
+
+
 def calculate_knowledge_score_from_survey(row):
     """
     Calculate knowledge score from survey responses
@@ -20,22 +75,22 @@ def calculate_knowledge_score_from_survey(row):
     # Knowledge Check 1: Incognito mode (False is correct)
     if 'Knowledge_Incognito_ISP' in row:
         total += 1
-        answer = str(row['Knowledge_Incognito_ISP']).strip().lower()
-        if answer in ['false', 'b', 'incorrect']:
+        answer = interpret_boolean_response(row['Knowledge_Incognito_ISP'])
+        if answer is False:
             score += 1
     
     # Knowledge Check 2: Anonymous data (False is correct)
     if 'Knowledge_Anonymous_Trace' in row:
         total += 1
-        answer = str(row['Knowledge_Anonymous_Trace']).strip().lower()
-        if answer in ['false', 'b', 'incorrect']:
+        answer = interpret_boolean_response(row['Knowledge_Anonymous_Trace'])
+        if answer is False:
             score += 1
     
     # Knowledge Check 3: Social media messages (True is correct)
     if 'Knowledge_SocialMedia_Messages' in row:
         total += 1
-        answer = str(row['Knowledge_SocialMedia_Messages']).strip().lower()
-        if answer in ['true', 'a', 'correct']:
+        answer = interpret_boolean_response(row['Knowledge_SocialMedia_Messages'])
+        if answer is True:
             score += 1
     
     return score, total
@@ -45,8 +100,8 @@ def prepare_survey_data_for_ml(csv_path='survey_data_backup.csv'):
     Prepare survey data for ML model training
     """
     try:
-        df = pd.read_csv(csv_path)
-        print(f"📊 Loaded {len(df)} survey responses")
+        df = load_primary_survey_dataframe(csv_path=csv_path)
+        print(f"[INFO] Loaded {len(df)} survey responses")
         
         # Column mapping from Analysis.ipynb
         column_mapping = {}
@@ -91,17 +146,17 @@ def prepare_survey_data_for_ml(csv_path='survey_data_backup.csv'):
         df['Knowledge_Score'] = knowledge_scores
         df['Score'] = knowledge_scores  # Also add as 'Score' for compatibility
         
-        print(f"✅ Prepared data with knowledge scores")
+        print("[INFO] Prepared data with knowledge scores")
         print(f"   Average knowledge score: {np.mean(knowledge_scores):.1f}%")
         
         return df
         
     except FileNotFoundError:
-        print(f"❌ Survey data file not found: {csv_path}")
+        print(f"[ERROR] Survey data file not found: {csv_path}")
         print("   Please ensure the file exists or update the path")
         return None
     except Exception as e:
-        print(f"❌ Error preparing data: {e}")
+        print(f"[ERROR] Error preparing data: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -118,7 +173,7 @@ def train_enhanced_model():
     df = prepare_survey_data_for_ml()
     
     if df is None:
-        print("\n⚠️  Using sample data instead")
+        print("\n[WARN] Using sample data instead")
         df = None
     
     # Initialize and train model
@@ -127,12 +182,12 @@ def train_enhanced_model():
     if df is not None:
         # Use survey data
         X, y = ml.preprocess_data(df)
-        print(f"\n📈 Training with {len(X)} real survey responses")
+        print(f"\n[INFO] Training with {len(X)} real survey responses")
     else:
         # Use sample data
         df = ml.load_survey_data()
         X, y = ml.preprocess_data(df)
-        print(f"\n📈 Training with sample data")
+        print("\n[INFO] Training with sample data")
     
     # Train model
     ml.train_model(X, y)
@@ -140,7 +195,7 @@ def train_enhanced_model():
     # Save model
     ml.save_model('ml_model.pkl')
     
-    print("\n✅ Model training complete!")
+    print("\n[INFO] Model training complete!")
     print("   Model saved to: ml_model.pkl")
     print("   The application will now use this enhanced model")
     

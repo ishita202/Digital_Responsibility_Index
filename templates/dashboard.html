@@ -9,27 +9,94 @@
 </div>
 
 <div class="row mb-4">
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-primary">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-primary h-100">
             <div class="card-body">
                 <h5 class="card-title"><i class="fas fa-question-circle me-2"></i>Total Quizzes</h5>
                 <h2 class="card-text">{{ total_attempts }}</h2>
+                <p class="mb-0 text-white-50">Keep building streaks by attempting more quizzes.</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-success">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-success h-100">
             <div class="card-body">
                 <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Average Score</h5>
                 <h2 class="card-text">{{ "%.1f"|format(avg_score) }}%</h2>
+                <p class="mb-0 text-white-50">Best score {{ "%.1f"|format(best_score) }}%.</p>
             </div>
         </div>
     </div>
-    <div class="col-md-4 mb-3">
-        <div class="card text-white bg-info">
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-warning h-100">
             <div class="card-body">
-                <h5 class="card-title"><i class="fas fa-book me-2"></i>Learning Resources</h5>
-                <h2 class="card-text">Available</h2>
+                <h5 class="card-title"><i class="fas fa-fire me-2"></i>Learning Streak</h5>
+                <h2 class="card-text">{{ current_streak }} days</h2>
+                <p class="mb-0 text-white-50">Come back tomorrow to keep it going!</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card text-white bg-info h-100">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-clock me-2"></i>Time Practicing</h5>
+                <h2 class="card-text">{{ (total_time_spent / 60) | round(1) }} mins</h2>
+                <p class="mb-0 text-white-50">Keep practicing to raise confidence.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-brain me-2"></i>Knowledge Insights</h5>
+            </div>
+            <div class="card-body">
+                {% if knowledge_level %}
+                    <h3>{{ knowledge_level }} level</h3>
+                    {% if knowledge_confidence %}
+                    <p class="text-muted mb-3">Model confidence: {{ knowledge_confidence }}%</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">We need a few quiz attempts to estimate your knowledge level.</p>
+                {% endif %}
+                <div class="mt-3">
+                    <h6 class="text-uppercase text-muted">Recommendations</h6>
+                    {% if knowledge_recommendations %}
+                        <ul class="mb-0">
+                            {% for rec in knowledge_recommendations %}
+                                <li>{{ rec }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-muted mb-0">Complete a quiz to unlock tailored actions.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-trending-up me-2"></i>Score Progress</h5>
+            </div>
+            <div class="card-body">
+                {% if score_history %}
+                    <ul class="list-group list-group-flush">
+                        {% for point in score_history %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ point.label }}</span>
+                            <span class="badge {% if point.percentage >= 70 %}bg-success{% elif point.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
+                                {{ "%.1f"|format(point.percentage) }}%
+                            </span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-muted mb-0">No score history yet. Start with your first quiz!</p>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -48,14 +115,16 @@
                             <thead>
                                 <tr>
                                     <th>Date</th>
+                                    <th>Type</th>
                                     <th>Score</th>
-                                    <th>Percentage</th>
+                                    <th>%</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for attempt in recent_attempts %}
                                 <tr>
                                     <td>{{ attempt.completed_at | localtime }}</td>
+                                    <td>{{ attempt.quiz_type or 'General' }}</td>
                                     <td>{{ attempt.score }}/{{ attempt.total_questions }}</td>
                                     <td>
                                         <span class="badge {% if attempt.percentage >= 70 %}bg-success{% elif attempt.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}">
@@ -68,7 +137,7 @@
                         </table>
                     </div>
                 {% else %}
-                    <p class="text-muted">No quiz attempts yet. <a href="{{ url_for('quiz') }}">Take your first quiz!</a></p>
+                    <p class="text-muted">No quiz attempts yet. <a href="{{ url_for('quiz_select') }}">Take your first quiz!</a></p>
                 {% endif %}
             </div>
         </div>
@@ -102,14 +171,72 @@
     </div>
 </div>
 
-<div class="row mt-4">
+<div class="row mb-4">
+    <div class="col-lg-7 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0"><i class="fas fa-layer-group me-2"></i>Quiz Performance by Category</h5>
+            </div>
+            <div class="card-body">
+                {% if quiz_type_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Quiz Type</th>
+                                    <th>Attempts</th>
+                                    <th>Average %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in quiz_type_stats %}
+                                <tr>
+                                    <td>{{ stat.quiz_type }}</td>
+                                    <td>{{ stat.count }}</td>
+                                    <td>{{ "%.1f"|format(stat.average) }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">No quiz data yet. Attempt a quiz to see insights.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5 mb-3">
+        <div class="card h-100">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0"><i class="fas fa-lightbulb me-2"></i>Featured Resources</h5>
+            </div>
+            <div class="card-body">
+                {% if featured_resources %}
+                    <div class="list-group list-group-flush">
+                        {% for resource in featured_resources %}
+                        <a href="{{ resource.url or '#' }}" class="list-group-item list-group-item-action">
+                            <h6 class="mb-1">{{ resource.title }}</h6>
+                            <p class="mb-1 text-muted">{{ resource.description }}</p>
+                            <small class="text-uppercase text-muted">{{ resource.category }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted mb-0">Resources will appear here once added by admins.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-md-12">
         <div class="card">
             <div class="card-header bg-success text-white">
                 <h5><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
             </div>
             <div class="card-body">
-                <a href="{{ url_for('quiz') }}" class="btn btn-primary me-2">
+                <a href="{{ url_for('quiz_select') }}" class="btn btn-primary me-2">
                     <i class="fas fa-question-circle me-2"></i>Take Quiz
                 </a>
                 <a href="{{ url_for('learn') }}" class="btn btn-success me-2">
