@@ -45,7 +45,13 @@
 
 <div class="row">
     <div class="col-md-12">
-        <h4 class="mb-3">Recommended Resources</h4>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="mb-0">Recommended Resources</h4>
+            <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Resources open in a new tab. If links don't open, check your browser's popup blocker.
+            </small>
+        </div>
     </div>
     {% if resources %}
         {% for resource in resources %}
@@ -64,9 +70,15 @@
                         </small>
                     </p>
                     {% if resource.url %}
-                    <a href="{{ resource.url }}" target="_blank" class="btn btn-primary btn-sm">
+                    <a href="{{ resource.url }}" 
+                       target="_blank" 
+                       rel="noopener noreferrer"
+                       class="btn btn-primary btn-sm"
+                       onclick="handleResourceClick(event, '{{ resource.title|replace("'", "\\'") }}')">
                         <i class="fas fa-external-link-alt me-1"></i>View Resource
                     </a>
+                    {% else %}
+                    <span class="text-muted small">URL not available</span>
                     {% endif %}
                 </div>
             </div>
@@ -102,12 +114,73 @@
                     <li>Practicing good password hygiene and security habits</li>
                 </ul>
                 {% endif %}
-                <a href="{{ url_for('quiz') }}" class="btn btn-primary">
+                <a href="{{ url_for('quiz_select') }}" class="btn btn-primary">
                     <i class="fas fa-question-circle me-2"></i>Test Your Knowledge
                 </a>
             </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function handleResourceClick(event, resourceTitle) {
+    // Log the click for analytics (optional)
+    console.log('Opening resource:', resourceTitle);
+    
+    // Validate URL before opening
+    const link = event.currentTarget;
+    const url = link.href;
+    
+    // Check if URL is valid
+    if (!url || url === '#' || url.includes('example.com')) {
+        event.preventDefault();
+        alert('This resource URL is not available. Please contact an administrator.');
+        return false;
+    }
+    
+    // Show loading state
+    const originalHTML = link.innerHTML;
+    link.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Opening...';
+    link.style.pointerEvents = 'none';
+    
+    // Reset after a delay (the page should have opened by then)
+    setTimeout(() => {
+        link.innerHTML = originalHTML;
+        link.style.pointerEvents = 'auto';
+    }, 2000);
+    
+    // The link will open normally
+    return true;
+}
+
+// Add click handlers to all resource links
+document.addEventListener('DOMContentLoaded', function() {
+    const resourceLinks = document.querySelectorAll('a[target="_blank"]');
+    resourceLinks.forEach(function(link) {
+        // Add visual feedback
+        link.addEventListener('mouseenter', function() {
+            this.style.opacity = '0.8';
+        });
+        link.addEventListener('mouseleave', function() {
+            this.style.opacity = '1';
+        });
+        
+        // Check if URL is valid on page load
+        if (link.href && (link.href.includes('example.com') || link.href === '#')) {
+            link.style.opacity = '0.5';
+            link.style.cursor = 'not-allowed';
+            link.title = 'This resource URL is not available';
+        }
+    });
+    
+    // Add a notice if browser might block popups
+    const hasResourceLinks = resourceLinks.length > 0;
+    if (hasResourceLinks) {
+        console.log('Resource links are ready. If links don\'t open, check your browser\'s popup blocker settings.');
+    }
+});
+</script>
 {% endblock %}
 

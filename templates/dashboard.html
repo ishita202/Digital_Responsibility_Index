@@ -214,7 +214,9 @@
                 {% if featured_resources %}
                     <div class="list-group list-group-flush">
                         {% for resource in featured_resources %}
-                        <a href="{{ resource.url or '#' }}" class="list-group-item list-group-item-action">
+                        <a href="{{ resource.url or '#' }}" 
+                           {% if resource.url %}target="_blank" rel="noopener noreferrer"{% endif %}
+                           class="list-group-item list-group-item-action">
                             <h6 class="mb-1">{{ resource.title }}</h6>
                             <p class="mb-1 text-muted">{{ resource.description }}</p>
                             <small class="text-uppercase text-muted">{{ resource.category }}</small>

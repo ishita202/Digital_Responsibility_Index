@@ -89,14 +89,30 @@ login_manager.login_view = 'login'
 def load_awareness_dataframe():
     """Load survey responses from CSV or Excel for visualization."""
     if os.path.exists(SURVEY_CSV_PATH):
-        return pd.read_csv(SURVEY_CSV_PATH)
+        try:
+            return pd.read_csv(SURVEY_CSV_PATH)
+        except Exception as e:
+            print(f"Error reading CSV file: {e}")
+            # Try to load from Excel if CSV fails
+            if os.path.exists(SURVEY_XLSX_PATH):
+                pass  # Will try Excel below
+            return None
+    
     if os.path.exists(SURVEY_XLSX_PATH):
         try:
             df = pd.read_excel(SURVEY_XLSX_PATH)
-            df.to_csv(SURVEY_CSV_PATH, index=False)
+            # Save as CSV for future use
+            try:
+                df.to_csv(SURVEY_CSV_PATH, index=False)
+                print(f"Converted Excel to CSV: {SURVEY_CSV_PATH}")
+            except Exception as e:
+                print(f"Warning: Could not save CSV file: {e}")
             return df
         except ImportError as exc:
-            print("openpyxl is required to read Excel files:", exc)
+            print("openpyxl is required to read Excel files. Install with: pip install openpyxl")
+            return None
+        except Exception as e:
+            print(f"Error reading Excel file: {e}")
             return None
     return None
 
@@ -787,7 +803,7 @@ with app.app_context():
 def index():
     if current_user.is_authenticated:
         if current_user.is_admin:
-            return redirect(url_for('admin_dashboard'))
+            return redirect(url_for('home'))  # Admin goes to home, not dashboard
         return redirect(url_for('home'))
     return render_template('index.html')
 
@@ -853,7 +869,7 @@ def login():
             db.session.commit()
             
             if user.is_admin:
-                return redirect(url_for('admin_dashboard'))
+                return redirect(url_for('home'))  # Admin goes to home page
             return redirect(url_for('home'))
         else:
             flash('Invalid username or password')
@@ -879,7 +895,57 @@ def logout():
 def home():
     """User home/explore page with featured content and recommendations"""
     if current_user.is_admin:
-        return redirect(url_for('admin_dashboard'))
+        # Admin home page - different from admin dashboard
+        try:
+            # Quick stats for admin home
+            total_users = User.query.count()
+            total_quizzes = QuizAttempt.query.count()
+            total_activities = UserActivity.query.count()
+            
+            # Recent activities (last 10)
+            recent_activities = UserActivity.query.order_by(UserActivity.created_at.desc()).limit(10).all() or []
+            
+            # Recent quiz attempts
+            recent_quiz_attempts = QuizAttempt.query.order_by(QuizAttempt.completed_at.desc()).limit(5).all() or []
+            
+            # Today's activity count
+            from datetime import datetime, timedelta
+            today = datetime.utcnow().date()
+            today_activities = UserActivity.query.filter(
+                db.func.date(UserActivity.created_at) == today
+            ).count()
+            
+            # New users today
+            new_users_today = User.query.filter(
+                db.func.date(User.created_at) == today
+            ).count()
+            
+            # Average quiz score across all users
+            all_attempts = QuizAttempt.query.all()
+            overall_avg_score = float(np.mean([a.percentage for a in all_attempts])) if all_attempts else 0.0
+            
+            return render_template('admin_home.html',
+                                 total_users=total_users,
+                                 total_quizzes=total_quizzes,
+                                 total_activities=total_activities,
+                                 today_activities=today_activities,
+                                 new_users_today=new_users_today,
+                                 overall_avg_score=overall_avg_score,
+                                 recent_activities=recent_activities,
+                                 recent_quiz_attempts=recent_quiz_attempts)
+        except Exception as e:
+            print(f"Error in admin home route: {e}")
+            import traceback
+            traceback.print_exc()
+            return render_template('admin_home.html',
+                                 total_users=0,
+                                 total_quizzes=0,
+                                 total_activities=0,
+                                 today_activities=0,
+                                 new_users_today=0,
+                                 overall_avg_score=0.0,
+                                 recent_activities=[],
+                                 recent_quiz_attempts=[])
     
     # Get user statistics
     total_attempts = QuizAttempt.query.filter_by(user_id=current_user.id).count()
@@ -959,107 +1025,114 @@ def dashboard():
     if current_user.is_admin:
         return redirect(url_for('admin_dashboard'))
     
-    # Fetch attempts and activities once
-    attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.completed_at.desc()).all()
-    recent_attempts = attempts[:5]
-    recent_activities = UserActivity.query.filter_by(user_id=current_user.id).order_by(UserActivity.created_at.desc()).limit(10).all()
+    try:
+        # Fetch attempts and activities once
+        attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.completed_at.desc()).all()
+        recent_attempts = attempts[:5] if len(attempts) > 5 else attempts
+        recent_activities = UserActivity.query.filter_by(user_id=current_user.id).order_by(UserActivity.created_at.desc()).limit(10).all()
 
-    total_attempts = len(attempts)
-    avg_score = float(np.mean([a.percentage for a in attempts])) if attempts else 0.0
-    best_score = max([a.percentage for a in attempts], default=0)
-    total_time_spent = sum([(a.time_taken or 0) for a in attempts])
+        total_attempts = len(attempts)
+        avg_score = float(np.mean([a.percentage for a in attempts])) if attempts else 0.0
+        best_score = float(max([a.percentage for a in attempts], default=0))
+        total_time_spent = sum([(a.time_taken or 0) for a in attempts])
 
-    # Score history for charts / lists (reverse chronological limited)
-    score_history = [
-        {
-            'label': a.completed_at.strftime('%d %b') if a.completed_at else f'Attempt {idx + 1}',
-            'percentage': a.percentage
-        }
-        for idx, a in enumerate(reversed(attempts[-10:]))
-    ]
-
-    # Quiz type breakdown
-    quiz_type_stats = []
-    if attempts:
-        stats_map = {}
-        for attempt in attempts:
-            key = attempt.quiz_type or 'General'
-            entry = stats_map.setdefault(key, {'quiz_type': key, 'count': 0, 'scores': []})
-            entry['count'] += 1
-            entry['scores'].append(attempt.percentage)
-        for entry in stats_map.values():
-            entry['average'] = float(np.mean(entry['scores'])) if entry['scores'] else 0.0
-            quiz_type_stats.append(entry)
-        quiz_type_stats.sort(key=lambda x: x['count'], reverse=True)
-
-    # Activity streak (days with activity)
-    today = datetime.utcnow().date()
-    streak = 0
-    check_date = today
-    for _ in range(30):
-        day_activities = UserActivity.query.filter(
-            UserActivity.user_id == current_user.id,
-            db.func.date(UserActivity.created_at) == check_date
-        ).first()
-        if day_activities:
-            streak += 1
-            check_date = check_date - timedelta(days=1)
-        else:
-            break
-
-    # ML-driven knowledge insights
-    knowledge_level = None
-    knowledge_confidence = None
-    knowledge_recommendations = []
-    ml = get_ml_model()
-    if ml:
-        try:
-            user_data = {
-                'Age_Range': current_user.age_range or '18-21',
-                'Gender': current_user.gender or 'Male',
-                'Academic_Stream': current_user.academic_stream or 'B.Tech',
-                'Year_of_Study': current_user.year_of_study or '2nd year',
-                'Privacy_Policy_Reading': 'Sometimes',
-                'App_Permissions_Review': 'Sometimes',
-                'Different_Passwords': 'Yes'
+        # Score history for charts / lists (reverse chronological limited)
+        score_history = [
+            {
+                'label': a.completed_at.strftime('%d %b') if a.completed_at else f'Attempt {idx + 1}',
+                'percentage': a.percentage
             }
+            for idx, a in enumerate(reversed(attempts[-10:]))
+        ]
 
-            if attempts:
-                if avg_score < 40:
-                    user_data['Privacy_Policy_Reading'] = 'Never'
-                    user_data['App_Permissions_Review'] = 'Never'
-                elif avg_score < 70:
-                    user_data['Privacy_Policy_Reading'] = 'Sometimes'
-                    user_data['App_Permissions_Review'] = 'Sometimes'
-                else:
-                    user_data['Privacy_Policy_Reading'] = 'Often'
-                    user_data['App_Permissions_Review'] = 'Often'
+        # Quiz type breakdown
+        quiz_type_stats = []
+        if attempts:
+            stats_map = {}
+            for attempt in attempts:
+                key = attempt.quiz_type or 'General'
+                entry = stats_map.setdefault(key, {'quiz_type': key, 'count': 0, 'scores': []})
+                entry['count'] += 1
+                entry['scores'].append(attempt.percentage)
+            for entry in stats_map.values():
+                entry['average'] = float(np.mean(entry['scores'])) if entry['scores'] else 0.0
+                quiz_type_stats.append(entry)
+            quiz_type_stats.sort(key=lambda x: x['count'], reverse=True)
 
-            knowledge_level, confidence = ml.predict_knowledge_level(user_data)
-            knowledge_confidence = round(confidence * 100, 1)
-            knowledge_recommendations = ml.get_recommendations(knowledge_level)
-        except Exception as e:
-            print(f"Error getting ML recommendations: {e}")
+        # Activity streak (days with activity)
+        today = datetime.utcnow().date()
+        streak = 0
+        check_date = today
+        for _ in range(30):
+            day_activities = UserActivity.query.filter(
+                UserActivity.user_id == current_user.id,
+                db.func.date(UserActivity.created_at) == check_date
+            ).first()
+            if day_activities:
+                streak += 1
+                check_date = check_date - timedelta(days=1)
+            else:
+                break
 
-    # Featured learning resources
-    featured_resources = LearningResource.query.limit(3).all()
+        # ML-driven knowledge insights
+        knowledge_level = None
+        knowledge_confidence = None
+        knowledge_recommendations = []
+        ml = get_ml_model()
+        if ml:
+            try:
+                user_data = {
+                    'Age_Range': current_user.age_range or '18-21',
+                    'Gender': current_user.gender or 'Male',
+                    'Academic_Stream': current_user.academic_stream or 'B.Tech',
+                    'Year_of_Study': current_user.year_of_study or '2nd year',
+                    'Privacy_Policy_Reading': 'Sometimes',
+                    'App_Permissions_Review': 'Sometimes',
+                    'Different_Passwords': 'Yes'
+                }
 
-    return render_template(
-        'dashboard.html',
-        total_attempts=total_attempts,
-        recent_attempts=recent_attempts,
-        avg_score=avg_score,
-        best_score=best_score,
-        total_time_spent=total_time_spent,
-        score_history=score_history,
-        quiz_type_stats=quiz_type_stats,
-        recent_activities=recent_activities,
-        current_streak=streak,
-        knowledge_level=knowledge_level,
-        knowledge_confidence=knowledge_confidence,
-        knowledge_recommendations=knowledge_recommendations,
-        featured_resources=featured_resources
-    )
+                if attempts:
+                    if avg_score < 40:
+                        user_data['Privacy_Policy_Reading'] = 'Never'
+                        user_data['App_Permissions_Review'] = 'Never'
+                    elif avg_score < 70:
+                        user_data['Privacy_Policy_Reading'] = 'Sometimes'
+                        user_data['App_Permissions_Review'] = 'Sometimes'
+                    else:
+                        user_data['Privacy_Policy_Reading'] = 'Often'
+                        user_data['App_Permissions_Review'] = 'Often'
+
+                knowledge_level, confidence = ml.predict_knowledge_level(user_data)
+                knowledge_confidence = round(confidence * 100, 1)
+                knowledge_recommendations = ml.get_recommendations(knowledge_level)
+            except Exception as e:
+                print(f"Error getting ML recommendations: {e}")
+
+        # Featured learning resources
+        featured_resources = LearningResource.query.limit(3).all() or []
+
+        return render_template(
+            'dashboard.html',
+            total_attempts=total_attempts,
+            recent_attempts=recent_attempts,
+            avg_score=avg_score,
+            best_score=best_score,
+            total_time_spent=total_time_spent,
+            score_history=score_history,
+            quiz_type_stats=quiz_type_stats,
+            recent_activities=recent_activities,
+            current_streak=streak,
+            knowledge_level=knowledge_level,
+            knowledge_confidence=knowledge_confidence,
+            knowledge_recommendations=knowledge_recommendations,
+            featured_resources=featured_resources
+        )
+    except Exception as e:
+        print(f"Error in dashboard route: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('An error occurred while loading dashboard. Please try again.')
+        return redirect(url_for('home'))
 
 @app.route('/profile')
 @login_required
@@ -1067,52 +1140,135 @@ def profile():
     attempts = QuizAttempt.query.filter_by(user_id=current_user.id).order_by(QuizAttempt.completed_at.desc()).all()
     return render_template('profile.html', attempts=attempts)
 
+@app.route('/learn/public')
+def learn_public():
+    """Public learning resources page - no login required"""
+    try:
+        # Get learning resources - limit to 6 for public view
+        try:
+            resources = LearningResource.query.limit(6).all()
+            if resources is None:
+                resources = []
+        except Exception as e:
+            print(f"Error querying learning resources: {e}")
+            resources = []
+        
+        return render_template('learn_public.html', resources=resources)
+    except Exception as e:
+        print(f"Error in learn_public route: {e}")
+        import traceback
+        traceback.print_exc()
+        return render_template('learn_public.html', resources=[])
+
 @app.route('/learn')
 @login_required
 def learn():
-    resources = LearningResource.query.all()
-    
-    # Get personalized recommendations using ML model
-    recommendations = []
-    ml = get_ml_model()
-    if ml and current_user:
+    """Learning resources page with personalized recommendations"""
+    try:
+        # Get learning resources - handle empty results gracefully
         try:
-            # Prepare user data for prediction
-            user_data = {
-                'Age_Range': current_user.age_range or '18-21',
-                'Gender': current_user.gender or 'Male',
-                'Academic_Stream': current_user.academic_stream or 'B.Tech',
-                'Year_of_Study': current_user.year_of_study or '2nd year',
-                'Privacy_Policy_Reading': 'Sometimes',  # Default values
-                'App_Permissions_Review': 'Sometimes',
-                'Different_Passwords': 'Yes'
-            }
-            
-            # Get user's average quiz score
-            attempts = QuizAttempt.query.filter_by(user_id=current_user.id).all()
-            if attempts:
-                avg_score = np.mean([a.percentage for a in attempts])
-                if avg_score < 40:
-                    user_data['Privacy_Policy_Reading'] = 'Never'
-                    user_data['App_Permissions_Review'] = 'Never'
-                elif avg_score < 70:
-                    user_data['Privacy_Policy_Reading'] = 'Sometimes'
-                    user_data['App_Permissions_Review'] = 'Sometimes'
-                else:
-                    user_data['Privacy_Policy_Reading'] = 'Often'
-                    user_data['App_Permissions_Review'] = 'Often'
-            
-            knowledge_level, confidence = ml.predict_knowledge_level(user_data)
-            recommendations = ml.get_recommendations(knowledge_level)
+            resources = LearningResource.query.all()
+            if resources is None:
+                resources = []
         except Exception as e:
-            print(f"Error getting ML recommendations: {e}")
+            print(f"Error querying learning resources: {e}")
+            resources = []
+        
+        # Get personalized recommendations using ML model
+        recommendations = []
+        try:
+            ml = get_ml_model()
+            if ml and current_user:
+                try:
+                    # Prepare user data for prediction
+                    user_data = {
+                        'Age_Range': current_user.age_range or '18-21',
+                        'Gender': current_user.gender or 'Male',
+                        'Academic_Stream': current_user.academic_stream or 'B.Tech',
+                        'Year_of_Study': current_user.year_of_study or '2nd year',
+                        'Privacy_Policy_Reading': 'Sometimes',  # Default values
+                        'App_Permissions_Review': 'Sometimes',
+                        'Different_Passwords': 'Yes'
+                    }
+                    
+                    # Get user's average quiz score
+                    try:
+                        attempts = QuizAttempt.query.filter_by(user_id=current_user.id).all()
+                        if attempts:
+                            avg_score = float(np.mean([a.percentage for a in attempts]))
+                            if avg_score < 40:
+                                user_data['Privacy_Policy_Reading'] = 'Never'
+                                user_data['App_Permissions_Review'] = 'Never'
+                            elif avg_score < 70:
+                                user_data['Privacy_Policy_Reading'] = 'Sometimes'
+                                user_data['App_Permissions_Review'] = 'Sometimes'
+                            else:
+                                user_data['Privacy_Policy_Reading'] = 'Often'
+                                user_data['App_Permissions_Review'] = 'Often'
+                    except Exception as e:
+                        print(f"Error getting user attempts: {e}")
+                        # Continue with default values
+                    
+                    # Get ML recommendations
+                    try:
+                        knowledge_level, confidence = ml.predict_knowledge_level(user_data)
+                        recommendations = ml.get_recommendations(knowledge_level)
+                        if not recommendations:
+                            raise ValueError("Empty recommendations from ML model")
+                    except Exception as e:
+                        print(f"Error getting ML recommendations: {e}")
+                        raise  # Re-raise to use default recommendations
+                except Exception as e:
+                    print(f"Error in ML recommendation process: {e}")
+                    # Use default recommendations
+                    recommendations = [
+                        'Review privacy settings on all your social media accounts',
+                        'Read privacy policies before installing new apps',
+                        'Use different passwords for different accounts',
+                        'Enable two-factor authentication where available',
+                        'Regularly review app permissions on your devices'
+                    ]
+            else:
+                # Default recommendations if ML model not available
+                recommendations = [
+                    'Review privacy settings on all your social media accounts',
+                    'Read privacy policies before installing new apps',
+                    'Use different passwords for different accounts',
+                    'Enable two-factor authentication where available',
+                    'Regularly review app permissions on your devices'
+                ]
+        except Exception as e:
+            print(f"Error initializing ML model: {e}")
+            # Use default recommendations
+            recommendations = [
+                'Review privacy settings on all your social media accounts',
+                'Read privacy policies before installing new apps',
+                'Use different passwords for different accounts',
+                'Enable two-factor authentication where available',
+                'Regularly review app permissions on your devices'
+            ]
+        
+        # Ensure recommendations is a list
+        if not isinstance(recommendations, list):
             recommendations = [
                 'Review privacy settings on all your social media accounts',
                 'Read privacy policies before installing new apps',
                 'Use different passwords for different accounts'
             ]
-    
-    return render_template('learn.html', resources=resources, recommendations=recommendations)
+        
+        return render_template('learn.html', resources=resources, recommendations=recommendations)
+    except Exception as e:
+        print(f"Error in learn route: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return page with empty data instead of redirecting
+        return render_template('learn.html', 
+                             resources=[], 
+                             recommendations=[
+                                 'Review privacy settings on all your social media accounts',
+                                 'Read privacy policies before installing new apps',
+                                 'Use different passwords for different accounts'
+                             ])
 
 @app.route('/visualizations')
 @login_required
@@ -1140,6 +1296,18 @@ def visualizations():
         timeline=json.dumps(insights['timeline']),
         raw_scores=json.dumps(insights['raw_scores'])
     )
+
+@app.route('/quiz/public')
+def quiz_public():
+    """Public quiz preview - no login required"""
+    try:
+        # Get a few sample questions for preview
+        quiz_types = QuizType.query.limit(3).all()
+        sample_questions = QuizQuestion.query.limit(3).all()
+        return render_template('quiz_public.html', quiz_types=quiz_types, sample_questions=sample_questions)
+    except Exception as e:
+        print(f"Error in quiz_public route: {e}")
+        return render_template('quiz_public.html', quiz_types=[], sample_questions=[])
 
 @app.route('/quiz')
 @login_required
@@ -1229,103 +1397,150 @@ def update_model():
 @app.route('/admin')
 @login_required
 def admin_dashboard():
+    """Admin dashboard with analytics and user statistics"""
     if not current_user.is_admin:
         flash('Access denied')
         return redirect(url_for('dashboard'))
     
-    # Analytics
-    total_users = User.query.count()
-    total_quizzes = QuizAttempt.query.count()
-    total_activities = UserActivity.query.count()
-    
-    # Recent activities
-    recent_activities = UserActivity.query.order_by(UserActivity.created_at.desc()).limit(20).all()
-    
-    # User statistics
-    users = User.query.all()
-    user_stats = []
-    for user in users:
-        attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
-        avg_score = np.mean([a.percentage for a in attempts]) if attempts else 0
-        user_stats.append({
-            'username': user.username,
-            'total_attempts': len(attempts),
-            'avg_score': avg_score,
-            'last_activity': UserActivity.query.filter_by(user_id=user.id).order_by(UserActivity.created_at.desc()).first()
-        })
-    
-    return render_template('admin_dashboard.html',
-                         total_users=total_users,
-                         total_quizzes=total_quizzes,
-                         total_activities=total_activities,
-                         recent_activities=recent_activities,
-                         user_stats=user_stats)
+    try:
+        # Analytics
+        total_users = User.query.count()
+        total_quizzes = QuizAttempt.query.count()
+        total_activities = UserActivity.query.count()
+        
+        # Recent activities
+        recent_activities = UserActivity.query.order_by(UserActivity.created_at.desc()).limit(20).all() or []
+        
+        # User statistics
+        users = User.query.all()
+        user_stats = []
+        for user in users:
+            try:
+                attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
+                avg_score = float(np.mean([a.percentage for a in attempts])) if attempts else 0.0
+                user_stats.append({
+                    'username': user.username,
+                    'total_attempts': len(attempts),
+                    'avg_score': avg_score,
+                    'last_activity': UserActivity.query.filter_by(user_id=user.id).order_by(UserActivity.created_at.desc()).first()
+                })
+            except Exception as e:
+                print(f"Error processing user {user.username}: {e}")
+                # Add user with default values if there's an error
+                user_stats.append({
+                    'username': user.username,
+                    'total_attempts': 0,
+                    'avg_score': 0.0,
+                    'last_activity': None
+                })
+        
+        return render_template('admin_dashboard.html',
+                             total_users=total_users,
+                             total_quizzes=total_quizzes,
+                             total_activities=total_activities,
+                             recent_activities=recent_activities,
+                             user_stats=user_stats)
+    except Exception as e:
+        print(f"Error in admin_dashboard route: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('An error occurred while loading the admin dashboard. Please try again.')
+        # Return a minimal dashboard even if there's an error
+        return render_template('admin_dashboard.html',
+                             total_users=0,
+                             total_quizzes=0,
+                             total_activities=0,
+                             recent_activities=[],
+                             user_stats=[])
 
 @app.route('/api/analytics')
 @login_required
 def analytics():
+    """API endpoint for admin analytics data"""
     if not current_user.is_admin:
         return jsonify({'error': 'Access denied'}), 403
     
-    # Daily activity and activity type breakdown
-    activities = UserActivity.query.order_by(UserActivity.created_at).all()
-    daily_activity = {}
-    activity_type_counts = {}
-    for activity in activities:
-        date_key = activity.created_at.date().isoformat()
-        daily_activity[date_key] = daily_activity.get(date_key, 0) + 1
-        activity_type = activity.activity_type or 'other'
-        activity_type_counts[activity_type] = activity_type_counts.get(activity_type, 0) + 1
-    
-    # Quiz performance and distributions
-    attempts = QuizAttempt.query.order_by(QuizAttempt.completed_at).all()
-    quiz_performance = {}
-    quiz_type_distribution = {}
-    score_distribution = {'Low': 0, 'Medium': 0, 'High': 0}
-    
-    for attempt in attempts:
-        if attempt.completed_at:
-            local_dt = utc_to_local(attempt.completed_at)
-            date_key = local_dt.date().isoformat()
-            quiz_performance.setdefault(date_key, []).append(attempt.percentage)
+    try:
+        # Daily activity and activity type breakdown
+        activities = UserActivity.query.order_by(UserActivity.created_at).all() or []
+        daily_activity = {}
+        activity_type_counts = {}
+        for activity in activities:
+            if activity.created_at:
+                date_key = activity.created_at.date().isoformat()
+                daily_activity[date_key] = daily_activity.get(date_key, 0) + 1
+                activity_type = activity.activity_type or 'other'
+                activity_type_counts[activity_type] = activity_type_counts.get(activity_type, 0) + 1
         
-        quiz_type = attempt.quiz_type or 'General'
-        quiz_type_distribution[quiz_type] = quiz_type_distribution.get(quiz_type, 0) + 1
+        # Quiz performance and distributions
+        attempts = QuizAttempt.query.order_by(QuizAttempt.completed_at).all() or []
+        quiz_performance = {}
+        quiz_type_distribution = {}
+        score_distribution = {'Low': 0, 'Medium': 0, 'High': 0}
         
-        if attempt.percentage < 40:
-            score_distribution['Low'] += 1
-        elif attempt.percentage < 70:
-            score_distribution['Medium'] += 1
-        else:
-            score_distribution['High'] += 1
-    
-    quiz_avg = {date: float(np.mean(scores)) for date, scores in quiz_performance.items()}
-    
-    # Top users by average score
-    user_stats = []
-    users = User.query.all()
-    for user in users:
-        user_attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
-        if not user_attempts:
-            continue
-        avg_score = float(np.mean([a.percentage for a in user_attempts]))
-        user_stats.append({
-            'username': user.username,
-            'avg_score': avg_score,
-            'attempts': len(user_attempts)
+        for attempt in attempts:
+            if attempt.completed_at:
+                try:
+                    local_dt = utc_to_local(attempt.completed_at)
+                    date_key = local_dt.date().isoformat()
+                    quiz_performance.setdefault(date_key, []).append(attempt.percentage)
+                except Exception as e:
+                    print(f"Error processing attempt date: {e}")
+            
+            quiz_type = attempt.quiz_type or 'General'
+            quiz_type_distribution[quiz_type] = quiz_type_distribution.get(quiz_type, 0) + 1
+            
+            if attempt.percentage < 40:
+                score_distribution['Low'] += 1
+            elif attempt.percentage < 70:
+                score_distribution['Medium'] += 1
+            else:
+                score_distribution['High'] += 1
+        
+        quiz_avg = {date: float(np.mean(scores)) for date, scores in quiz_performance.items()}
+        
+        # Top users by average score
+        user_stats = []
+        users = User.query.all()
+        for user in users:
+            try:
+                user_attempts = QuizAttempt.query.filter_by(user_id=user.id).all()
+                if not user_attempts:
+                    continue
+                avg_score = float(np.mean([a.percentage for a in user_attempts]))
+                user_stats.append({
+                    'username': user.username,
+                    'avg_score': avg_score,
+                    'attempts': len(user_attempts)
+                })
+            except Exception as e:
+                print(f"Error processing user {user.username} for analytics: {e}")
+                continue
+        
+        user_stats.sort(key=lambda u: u['avg_score'], reverse=True)
+        top_users = user_stats[:5]
+        
+        return jsonify({
+            'daily_activity': daily_activity,
+            'quiz_performance': quiz_avg,
+            'quiz_type_distribution': quiz_type_distribution,
+            'score_distribution': score_distribution,
+            'activity_type_counts': activity_type_counts,
+            'top_users': top_users
         })
-    
-    user_stats.sort(key=lambda u: u['avg_score'], reverse=True)
-    top_users = user_stats[:5]
-    
-    return jsonify({
-        'daily_activity': daily_activity,
-        'quiz_performance': quiz_avg,
-        'quiz_type_distribution': quiz_type_distribution,
-        'score_distribution': score_distribution,
-        'activity_type_counts': activity_type_counts,
-        'top_users': top_users
-    })
+    except Exception as e:
+        print(f"Error in analytics API: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return empty data structure instead of error to prevent frontend crashes
+        return jsonify({
+            'daily_activity': {},
+            'quiz_performance': {},
+            'quiz_type_distribution': {},
+            'score_distribution': {'Low': 0, 'Medium': 0, 'High': 0},
+            'activity_type_counts': {},
+            'top_users': []
+        })
 
 @app.route('/api/recommendations')
 @login_required
@@ -1366,6 +1581,254 @@ def get_recommendations():
             'confidence': float(confidence),
             'recommendations': recommendations
         })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# ==================== ADMIN MANAGEMENT ROUTES ====================
+
+@app.route('/admin/manage/questions')
+@login_required
+def manage_questions():
+    """Admin page to manage quiz questions"""
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    quiz_types = QuizType.query.all()
+    questions = QuizQuestion.query.order_by(QuizQuestion.created_at.desc()).all()
+    return render_template('admin_manage_questions.html', 
+                         questions=questions, 
+                         quiz_types=quiz_types)
+
+@app.route('/admin/questions/add', methods=['POST'])
+@login_required
+def add_question():
+    """Add a new quiz question"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        data = request.json
+        question = QuizQuestion(
+            question_text=data.get('question_text'),
+            option_a=data.get('option_a'),
+            option_b=data.get('option_b'),
+            option_c=data.get('option_c'),
+            option_d=data.get('option_d'),
+            correct_answer=data.get('correct_answer'),
+            category=data.get('category', 'General'),
+            quiz_type=data.get('quiz_type', 'General'),
+            explanation=data.get('explanation', ''),
+            difficulty=data.get('difficulty', 'Medium'),
+            time_limit=int(data.get('time_limit', 60))
+        )
+        db.session.add(question)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Question added successfully', 'id': question.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/questions/<int:question_id>')
+@login_required
+def get_question(question_id):
+    """Get a single question for editing"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        question = QuizQuestion.query.get_or_404(question_id)
+        return jsonify({
+            'id': question.id,
+            'question_text': question.question_text,
+            'option_a': question.option_a,
+            'option_b': question.option_b,
+            'option_c': question.option_c,
+            'option_d': question.option_d,
+            'correct_answer': question.correct_answer,
+            'category': question.category,
+            'quiz_type': question.quiz_type,
+            'explanation': question.explanation,
+            'difficulty': question.difficulty,
+            'time_limit': question.time_limit
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/questions/<int:question_id>/edit', methods=['POST'])
+@login_required
+def edit_question(question_id):
+    """Edit an existing quiz question"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        question = QuizQuestion.query.get_or_404(question_id)
+        data = request.json
+        question.question_text = data.get('question_text', question.question_text)
+        question.option_a = data.get('option_a', question.option_a)
+        question.option_b = data.get('option_b', question.option_b)
+        question.option_c = data.get('option_c', question.option_c)
+        question.option_d = data.get('option_d', question.option_d)
+        question.correct_answer = data.get('correct_answer', question.correct_answer)
+        question.category = data.get('category', question.category)
+        question.quiz_type = data.get('quiz_type', question.quiz_type)
+        question.explanation = data.get('explanation', question.explanation)
+        question.difficulty = data.get('difficulty', question.difficulty)
+        question.time_limit = int(data.get('time_limit', question.time_limit))
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Question updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/questions/<int:question_id>/delete', methods=['POST'])
+@login_required
+def delete_question(question_id):
+    """Delete a quiz question"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        question = QuizQuestion.query.get_or_404(question_id)
+        db.session.delete(question)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Question deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/manage/resources')
+@login_required
+def manage_resources():
+    """Admin page to manage learning resources"""
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    resources = LearningResource.query.order_by(LearningResource.created_at.desc()).all()
+    return render_template('admin_manage_resources.html', resources=resources)
+
+@app.route('/admin/resources/add', methods=['POST'])
+@login_required
+def add_resource():
+    """Add a new learning resource"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        data = request.json
+        resource = LearningResource(
+            title=data.get('title'),
+            description=data.get('description', ''),
+            url=data.get('url', ''),
+            category=data.get('category', 'General'),
+            resource_type=data.get('resource_type', 'article')
+        )
+        db.session.add(resource)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Resource added successfully', 'id': resource.id})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/resources/<int:resource_id>')
+@login_required
+def get_resource(resource_id):
+    """Get a single resource for editing"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        resource = LearningResource.query.get_or_404(resource_id)
+        return jsonify({
+            'id': resource.id,
+            'title': resource.title,
+            'description': resource.description,
+            'url': resource.url,
+            'category': resource.category,
+            'resource_type': resource.resource_type
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/resources/<int:resource_id>/edit', methods=['POST'])
+@login_required
+def edit_resource(resource_id):
+    """Edit an existing learning resource"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        resource = LearningResource.query.get_or_404(resource_id)
+        data = request.json
+        resource.title = data.get('title', resource.title)
+        resource.description = data.get('description', resource.description)
+        resource.url = data.get('url', resource.url)
+        resource.category = data.get('category', resource.category)
+        resource.resource_type = data.get('resource_type', resource.resource_type)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Resource updated successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/resources/<int:resource_id>/delete', methods=['POST'])
+@login_required
+def delete_resource(resource_id):
+    """Delete a learning resource"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        resource = LearningResource.query.get_or_404(resource_id)
+        db.session.delete(resource)
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'Resource deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/admin/settings')
+@login_required
+def admin_settings():
+    """Admin settings page"""
+    if not current_user.is_admin:
+        flash('Access denied')
+        return redirect(url_for('home'))
+    
+    # Get current stats
+    total_questions = QuizQuestion.query.count()
+    total_resources = LearningResource.query.count()
+    total_quiz_types = QuizType.query.count()
+    
+    return render_template('admin_settings.html',
+                         total_questions=total_questions,
+                         total_resources=total_resources,
+                         total_quiz_types=total_quiz_types,
+                         default_timezone=DEFAULT_TIMEZONE)
+
+@app.route('/admin/settings/update', methods=['POST'])
+@login_required
+def update_settings():
+    """Update admin settings"""
+    if not current_user.is_admin:
+        return jsonify({'error': 'Access denied'}), 403
+    
+    try:
+        data = request.json
+        # Update timezone if provided
+        global DEFAULT_TIMEZONE
+        if 'timezone' in data:
+            new_timezone = data.get('timezone')
+            # Validate timezone
+            try:
+                pytz.timezone(new_timezone)
+                DEFAULT_TIMEZONE = new_timezone
+            except pytz.exceptions.UnknownTimeZoneError:
+                return jsonify({'error': 'Invalid timezone'}), 400
+        
+        return jsonify({'success': True, 'message': 'Settings updated successfully'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

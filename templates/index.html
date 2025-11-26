@@ -12,41 +12,81 @@
         </p>
         <div class="row mt-5">
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow">
-                    <div class="card-body text-center">
-                        <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
-                        <h5 class="card-title">Learn</h5>
-                        <p class="card-text">Access comprehensive resources about digital privacy and data security.</p>
+                <a href="{{ url_for('learn_public') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow" style="transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 24px rgba(91, 141, 239, 0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 3px rgba(91, 141, 239, 0.06)'">
+                        <div class="card-body text-center">
+                            <i class="fas fa-graduation-cap fa-3x text-primary mb-3"></i>
+                            <h5 class="card-title">Learn</h5>
+                            <p class="card-text">Access comprehensive resources about digital privacy and data security.</p>
+                            <span class="badge bg-primary mt-2">Explore Now</span>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow">
-                    <div class="card-body text-center">
-                        <i class="fas fa-question-circle fa-3x text-success mb-3"></i>
-                        <h5 class="card-title">Quiz</h5>
-                        <p class="card-text">Test your knowledge with interactive quizzes on digital awareness topics.</p>
+                <a href="{{ url_for('quiz_public') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow" style="transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 24px rgba(72, 187, 120, 0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 3px rgba(72, 187, 120, 0.06)'">
+                        <div class="card-body text-center">
+                            <i class="fas fa-question-circle fa-3x text-success mb-3"></i>
+                            <h5 class="card-title">Quiz</h5>
+                            <p class="card-text">Test your knowledge with interactive quizzes on digital awareness topics.</p>
+                            <span class="badge bg-success mt-2">Try Sample Quiz</span>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
             <div class="col-md-4 mb-4">
-                <div class="card h-100 shadow">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
-                        <h5 class="card-title">Track Progress</h5>
-                        <p class="card-text">Monitor your performance and see your improvement over time.</p>
+                <a href="{{ url_for('register') }}" class="text-decoration-none">
+                    <div class="card h-100 shadow" style="transition: all 0.3s ease; cursor: pointer;" onmouseover="this.style.transform='translateY(-5px)'; this.style.boxShadow='0 8px 24px rgba(91, 141, 239, 0.15)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 1px 3px rgba(91, 141, 239, 0.06)'">
+                        <div class="card-body text-center">
+                            <i class="fas fa-chart-line fa-3x text-info mb-3"></i>
+                            <h5 class="card-title">Track Progress</h5>
+                            <p class="card-text">Monitor your performance and see your improvement over time.</p>
+                            <span class="badge bg-info mt-2">Sign Up to Track</span>
+                        </div>
                     </div>
-                </div>
+                </a>
             </div>
         </div>
-        <div class="mt-5">
-            <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-3">
+        <div class="mt-5 d-flex justify-content-center align-items-center gap-3 flex-wrap">
+            <a href="/register" 
+               id="getStartedBtn"
+               class="btn btn-primary btn-lg text-decoration-none" 
+               style="min-width: 200px; padding: 1rem 2.5rem; font-weight: 600; font-size: 1.1rem; box-shadow: 0 4px 12px rgba(91, 141, 239, 0.3); cursor: pointer; pointer-events: auto; position: relative; z-index: 10; display: inline-block;"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(91, 141, 239, 0.4)'"
+               onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(91, 141, 239, 0.3)'">
                 <i class="fas fa-user-plus me-2"></i>Get Started
             </a>
-            <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+            <a href="/login" 
+               id="loginBtn"
+               class="btn btn-outline-primary btn-lg text-decoration-none" 
+               style="min-width: 200px; padding: 1rem 2.5rem; font-weight: 600; font-size: 1.1rem; border-width: 2px; cursor: pointer; pointer-events: auto; position: relative; z-index: 10; display: inline-block;"
+               onmouseover="this.style.transform='translateY(-2px)'; this.style.background='#5B8DEF'; this.style.color='white'; this.style.boxShadow='0 4px 12px rgba(91, 141, 239, 0.3)'"
+               onmouseout="this.style.transform='translateY(0)'; this.style.background='transparent'; this.style.color='#5B8DEF'; this.style.boxShadow='none'">
                 <i class="fas fa-sign-in-alt me-2"></i>Login
             </a>
         </div>
+        <script>
+        // Ensure buttons are clickable
+        document.addEventListener('DOMContentLoaded', function() {
+            const getStartedBtn = document.getElementById('getStartedBtn');
+            const loginBtn = document.getElementById('loginBtn');
+            
+            if (getStartedBtn) {
+                getStartedBtn.addEventListener('click', function(e) {
+                    console.log('Get Started button clicked');
+                    window.location.href = '/register';
+                });
+            }
+            
+            if (loginBtn) {
+                loginBtn.addEventListener('click', function(e) {
+                    console.log('Login button clicked');
+                    window.location.href = '/login';
+                });
+            }
+        });
+        </script>
     </div>
 </div>
 

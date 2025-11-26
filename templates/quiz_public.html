@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2><i class="fas fa-question-circle me-2"></i>Quiz Preview</h2>
+        <p class="text-muted">Try a sample quiz to see what you'll learn. Sign up to take full quizzes and track your progress.</p>
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            This is a preview. <a href="{{ url_for('register') }}" class="alert-link">Sign up</a> to take full quizzes and save your scores.
+        </div>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{{ url_for('index') }}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left me-2"></i>Back
+        </a>
+        <a href="{{ url_for('register') }}" class="btn btn-primary">
+            <i class="fas fa-user-plus me-2"></i>Sign Up
+        </a>
+    </div>
+</div>
+
+{% if quiz_types %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h4 class="mb-3">Available Quiz Types</h4>
+        <div class="row">
+            {% for quiz_type in quiz_types %}
+            <div class="col-md-4 mb-3">
+                <div class="card shadow">
+                    <div class="card-body">
+                        <h5 class="card-title">
+                            <i class="fas fa-{{ quiz_type.icon or 'question-circle' }} me-2"></i>
+                            {{ quiz_type.name }}
+                        </h5>
+                        <p class="card-text">{{ quiz_type.description }}</p>
+                        <p class="text-muted small">
+                            <i class="fas fa-clock me-1"></i>{{ quiz_type.time_limit }}s | 
+                            <i class="fas fa-list me-1"></i>{{ quiz_type.question_count }} questions
+                        </p>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% if sample_questions %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        <h4 class="mb-3">Sample Questions</h4>
+        <div class="card shadow">
+            <div class="card-body">
+                {% for question in sample_questions %}
+                <div class="mb-4 pb-4 {% if not loop.last %}border-bottom{% endif %}">
+                    <h6 class="mb-3">
+                        <span class="badge bg-primary me-2">{{ loop.index }}</span>
+                        {{ question.question_text }}
+                    </h6>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <div class="p-2 border rounded">A. {{ question.option_a }}</div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="p-2 border rounded">B. {{ question.option_b }}</div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="p-2 border rounded">C. {{ question.option_c }}</div>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <div class="p-2 border rounded">D. {{ question.option_d }}</div>
+                        </div>
+                    </div>
+                    {% if question.explanation %}
+                    <div class="alert alert-success mt-2 mb-0">
+                        <strong>Explanation:</strong> {{ question.explanation }}
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<div class="row mt-4">
+    <div class="col-md-12">
+        <div class="card shadow">
+            <div class="card-body text-center">
+                <h5>Ready to test your knowledge?</h5>
+                <p class="text-muted">Sign up for free to take full quizzes, get instant feedback, and track your progress over time.</p>
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-2">
+                    <i class="fas fa-user-plus me-2"></i>Create Free Account
+                </a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg">
+                    <i class="fas fa-sign-in-alt me-2"></i>Login
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

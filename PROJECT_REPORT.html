@@ -1,0 +1,1296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Awareness Platform - Project Report</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1 {
+            color: #5B8DEF;
+            border-bottom: 3px solid #5B8DEF;
+            padding-bottom: 10px;
+            page-break-after: avoid;
+        }
+        h2 {
+            color: #3D6BC7;
+            margin-top: 30px;
+            page-break-after: avoid;
+        }
+        h3 {
+            color: #5B8DEF;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #5B8DEF;
+            color: white;
+        }
+        code {
+            background-color: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background-color: #f4f4f4;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        .page-break {
+            page-break-before: always;
+        }
+        ul, ol {
+            margin: 10px 0;
+            padding-left: 30px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        blockquote {
+            border-left: 4px solid #5B8DEF;
+            padding-left: 20px;
+            margin: 20px 0;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+<h1 id="digital-awareness-platform">Digital Awareness Platform</h1>
+<h2 id="final-year-project-report">Final Year Project Report</h2>
+<hr />
+<p><strong>Project Title:</strong> Digital Awareness Platform - A Machine Learning Based Educational System for Digital Privacy, Data Security, and AI Ethics</p>
+<p><strong>Project Type:</strong> Final Year Project<br />
+<strong>Academic Year:</strong> 2024-2025<br />
+<strong>Technology Stack:</strong> Python, Flask, Machine Learning, SQLite</p>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#executive-summary">Executive Summary</a></li>
+<li><a href="#introduction">Introduction</a></li>
+<li><a href="#problem-statement">Problem Statement</a></li>
+<li><a href="#objectives">Objectives</a></li>
+<li><a href="#literature-review">Literature Review</a></li>
+<li><a href="#system-architecture">System Architecture</a></li>
+<li><a href="#technology-stack">Technology Stack</a></li>
+<li><a href="#implementation-details">Implementation Details</a></li>
+<li><a href="#features-and-functionalities">Features and Functionalities</a></li>
+<li><a href="#machine-learning-model">Machine Learning Model</a></li>
+<li><a href="#database-design">Database Design</a></li>
+<li><a href="#user-interface-design">User Interface Design</a></li>
+<li><a href="#testing-and-validation">Testing and Validation</a></li>
+<li><a href="#results-and-analysis">Results and Analysis</a></li>
+<li><a href="#challenges-and-solutions">Challenges and Solutions</a></li>
+<li><a href="#future-enhancements">Future Enhancements</a></li>
+<li><a href="#conclusion">Conclusion</a></li>
+<li><a href="#references">References</a></li>
+</ol>
+<hr />
+<h2 id="1-executive-summary">1. Executive Summary</h2>
+<p>The Digital Awareness Platform is a comprehensive web-based educational system designed to enhance users' understanding of digital privacy, data security, and AI ethics. The platform integrates machine learning algorithms to provide personalized learning recommendations based on user profiles and quiz performance. </p>
+<p><strong>Key Highlights:</strong>
+- Interactive quiz system with 46+ learning resources
+- ML-powered personalized recommendations using Random Forest Classifier
+- Comprehensive admin dashboard for analytics and content management
+- Modern, responsive user interface with warm, professional design
+- Real-time performance tracking and progress monitoring</p>
+<p><strong>Technologies Used:</strong> Flask, SQLAlchemy, scikit-learn, Bootstrap 5, SQLite</p>
+<hr />
+<h2 id="2-introduction">2. Introduction</h2>
+<p>In today's digital age, understanding digital privacy, data security, and AI ethics has become crucial for individuals, especially students and young professionals. This project addresses the need for an accessible, interactive platform that educates users about these critical topics while providing personalized learning experiences.</p>
+<p>The platform combines:
+- <strong>Educational Content:</strong> Comprehensive learning resources on digital privacy and security
+- <strong>Assessment Tools:</strong> Interactive quizzes to test and improve knowledge
+- <strong>Machine Learning:</strong> AI-powered recommendations for personalized learning paths
+- <strong>Analytics:</strong> Detailed tracking and reporting of user progress</p>
+<hr />
+<h2 id="3-problem-statement">3. Problem Statement</h2>
+<h3 id="31-current-challenges">3.1 Current Challenges</h3>
+<ol>
+<li><strong>Lack of Awareness:</strong> Many users are unaware of digital privacy risks and data security best practices</li>
+<li><strong>Generic Learning:</strong> Existing educational resources don't adapt to individual learning needs</li>
+<li><strong>No Progress Tracking:</strong> Limited tools for users to track their learning progress</li>
+<li><strong>Fragmented Resources:</strong> Educational content is scattered across multiple sources</li>
+</ol>
+<h3 id="32-solution-approach">3.2 Solution Approach</h3>
+<p>This platform provides:
+- Centralized learning resources (49 curated resources including research papers, articles, and courses)
+- Personalized recommendations based on ML analysis
+- Interactive assessment tools with immediate feedback
+- Comprehensive progress tracking and analytics</p>
+<hr />
+<h2 id="4-objectives">4. Objectives</h2>
+<h3 id="41-primary-objectives">4.1 Primary Objectives</h3>
+<ol>
+<li><strong>Educational Platform:</strong> Create an interactive web platform for digital awareness education</li>
+<li><strong>ML Integration:</strong> Implement machine learning for personalized recommendations</li>
+<li><strong>User Engagement:</strong> Develop engaging quiz system with real-time feedback</li>
+<li><strong>Progress Tracking:</strong> Provide comprehensive analytics and progress monitoring</li>
+<li><strong>Admin Management:</strong> Enable content management and user analytics for administrators</li>
+</ol>
+<h3 id="42-secondary-objectives">4.2 Secondary Objectives</h3>
+<ol>
+<li><strong>Data Integration:</strong> Integrate survey data from Google Sheets for ML model training</li>
+<li><strong>Responsive Design:</strong> Ensure platform works across all devices</li>
+<li><strong>User Experience:</strong> Create intuitive, modern interface</li>
+<li><strong>Scalability:</strong> Design system architecture for future enhancements</li>
+</ol>
+<hr />
+<h2 id="5-literature-review">5. Literature Review</h2>
+<h3 id="51-digital-privacy-education">5.1 Digital Privacy Education</h3>
+<p>Research indicates that digital privacy awareness is crucial in the modern era. Studies show that:
+- Users often underestimate privacy risks
+- Educational interventions improve privacy behaviors
+- Personalized learning approaches are more effective than generic content</p>
+<h3 id="52-machine-learning-in-education">5.2 Machine Learning in Education</h3>
+<p>ML applications in educational platforms have shown:
+- Improved learning outcomes through personalization
+- Better engagement through adaptive content
+- Enhanced user experience with intelligent recommendations</p>
+<h3 id="53-technology-choices">5.3 Technology Choices</h3>
+<ul>
+<li><strong>Flask:</strong> Lightweight, flexible Python web framework</li>
+<li><strong>Random Forest:</strong> Robust ML algorithm for classification tasks</li>
+<li><strong>SQLite:</strong> Reliable, embedded database for small to medium applications</li>
+</ul>
+<hr />
+<h2 id="6-system-architecture">6. System Architecture</h2>
+<h3 id="61-overall-architecture">6.1 Overall Architecture</h3>
+<pre class="codehilite"><code>┌─────────────────────────────────────────────────────────┐
+│                    User Interface                        │
+│  (HTML, CSS, JavaScript, Bootstrap 5)                   │
+└────────────────────┬────────────────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────────────┐
+│              Flask Application Layer                     │
+│  (Routes, Authentication, Business Logic)               │
+└──────────┬──────────────────────┬───────────────────────┘
+           │                      │
+┌──────────▼──────────┐  ┌────────▼──────────────┐
+│   ML Model Layer    │  │   Database Layer      │
+│  (Random Forest)    │  │   (SQLite/SQLAlchemy) │
+└─────────────────────┘  └───────────────────────┘
+</code></pre>
+
+<h3 id="62-component-architecture">6.2 Component Architecture</h3>
+<p><strong>Frontend Components:</strong>
+- Landing Page (Public Access)
+- User Authentication (Login/Register)
+- Dashboard (User Statistics)
+- Quiz System (Interactive Assessment)
+- Learning Resources (Educational Content)
+- Admin Panel (Management &amp; Analytics)</p>
+<p><strong>Backend Components:</strong>
+- User Management System
+- Quiz Engine
+- ML Recommendation Engine
+- Analytics Engine
+- Content Management System</p>
+<hr />
+<h2 id="7-technology-stack">7. Technology Stack</h2>
+<h3 id="71-backend-technologies">7.1 Backend Technologies</h3>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>3.13+</td>
+<td>Core programming language</td>
+</tr>
+<tr>
+<td>Flask</td>
+<td>3.1.2+</td>
+<td>Web framework</td>
+</tr>
+<tr>
+<td>SQLAlchemy</td>
+<td>3.1.1+</td>
+<td>ORM for database operations</td>
+</tr>
+<tr>
+<td>Flask-Login</td>
+<td>0.6.3+</td>
+<td>User authentication</td>
+</tr>
+<tr>
+<td>Werkzeug</td>
+<td>3.1.3+</td>
+<td>Security utilities</td>
+</tr>
+</tbody>
+</table>
+<h3 id="72-machine-learning">7.2 Machine Learning</h3>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scikit-learn</td>
+<td>1.7.2+</td>
+<td>ML algorithms</td>
+</tr>
+<tr>
+<td>pandas</td>
+<td>2.3.3+</td>
+<td>Data manipulation</td>
+</tr>
+<tr>
+<td>numpy</td>
+<td>2.3.5+</td>
+<td>Numerical operations</td>
+</tr>
+<tr>
+<td>pickle</td>
+<td>Built-in</td>
+<td>Model serialization</td>
+</tr>
+</tbody>
+</table>
+<h3 id="73-frontend-technologies">7.3 Frontend Technologies</h3>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Version</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>HTML5</td>
+<td>-</td>
+<td>Markup</td>
+</tr>
+<tr>
+<td>CSS3</td>
+<td>-</td>
+<td>Styling</td>
+</tr>
+<tr>
+<td>JavaScript (ES6+)</td>
+<td>-</td>
+<td>Interactivity</td>
+</tr>
+<tr>
+<td>Bootstrap</td>
+<td>5.3.0</td>
+<td>UI framework</td>
+</tr>
+<tr>
+<td>Font Awesome</td>
+<td>6.4.0</td>
+<td>Icons</td>
+</tr>
+</tbody>
+</table>
+<h3 id="74-database">7.4 Database</h3>
+<table>
+<thead>
+<tr>
+<th>Technology</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SQLite</td>
+<td>Embedded database</td>
+</tr>
+<tr>
+<td>SQLAlchemy ORM</td>
+<td>Database abstraction</td>
+</tr>
+</tbody>
+</table>
+<h3 id="75-additional-tools">7.5 Additional Tools</h3>
+<ul>
+<li><strong>pytz:</strong> Timezone handling</li>
+<li><strong>openpyxl:</strong> Excel file processing</li>
+<li><strong>gspread:</strong> Google Sheets API integration</li>
+<li><strong>google-auth:</strong> Google authentication</li>
+</ul>
+<hr />
+<h2 id="8-implementation-details">8. Implementation Details</h2>
+<h3 id="81-project-structure">8.1 Project Structure</h3>
+<pre class="codehilite"><code>Digital Awareness Platform/
+├── app.py                          # Main Flask application (1838 lines)
+├── ml_model.py                     # ML model implementation
+├── google_sheets_integration.py     # Google Sheets API
+├── setup.py                        # Database initialization
+├── requirements.txt                # Dependencies
+├── templates/                      # HTML templates (17 files)
+│   ├── base.html
+│   ├── index.html
+│   ├── login.html
+│   ├── register.html
+│   ├── dashboard.html
+│   ├── home.html
+│   ├── quiz.html
+│   ├── quiz_select.html
+│   ├── learn.html
+│   ├── profile.html
+│   ├── admin_dashboard.html
+│   ├── admin_home.html
+│   └── [other templates]
+├── static/                         # Static assets
+│   ├── css/
+│   │   └── style.css              # Custom styling
+│   └── js/
+│       └── main.js                # JavaScript functions
+├── instance/
+│   └── digital_awareness.db       # SQLite database
+└── [documentation files]
+</code></pre>
+
+<h3 id="82-core-modules">8.2 Core Modules</h3>
+<h4 id="821-application-module-apppy">8.2.1 Application Module (app.py)</h4>
+<p><strong>Key Functions:</strong>
+- User authentication and authorization
+- Quiz management and scoring
+- ML model integration
+- Admin panel functionality
+- API endpoints for analytics</p>
+<p><strong>Lines of Code:</strong> 1,838 lines</p>
+<h4 id="822-ml-model-module-ml_modelpy">8.2.2 ML Model Module (ml_model.py)</h4>
+<p><strong>Key Functions:</strong>
+- Data preprocessing
+- Model training (Random Forest)
+- Knowledge level prediction
+- Recommendation generation</p>
+<h4 id="823-database-models">8.2.3 Database Models</h4>
+<ul>
+<li><strong>User:</strong> User accounts and profiles</li>
+<li><strong>QuizQuestion:</strong> Quiz questions and options</li>
+<li><strong>QuizAttempt:</strong> Quiz results and scores</li>
+<li><strong>UserActivity:</strong> Activity logging</li>
+<li><strong>LearningResource:</strong> Educational resources</li>
+<li><strong>QuizType:</strong> Quiz categories</li>
+</ul>
+<hr />
+<h2 id="9-features-and-functionalities">9. Features and Functionalities</h2>
+<h3 id="91-user-features">9.1 User Features</h3>
+<h4 id="911-registration-and-authentication">9.1.1 Registration and Authentication</h4>
+<ul>
+<li><strong>Secure Registration:</strong> Username, email, password with hashing</li>
+<li><strong>Profile Information:</strong> Age range, gender, academic stream, year of study</li>
+<li><strong>Login/Logout:</strong> Session management with Flask-Login</li>
+<li><strong>Password Security:</strong> Werkzeug password hashing</li>
+</ul>
+<h4 id="912-dashboard">9.1.2 Dashboard</h4>
+<ul>
+<li><strong>Statistics Overview:</strong></li>
+<li>Total quiz attempts</li>
+<li>Average score</li>
+<li>Best score</li>
+<li>Total time spent</li>
+<li><strong>Recent Activity:</strong> Last 5 quiz attempts</li>
+<li><strong>Activity Log:</strong> User activity history</li>
+<li><strong>Progress Visualization:</strong> Charts and graphs</li>
+<li><strong>Quick Actions:</strong> Direct links to quizzes and resources</li>
+</ul>
+<h4 id="913-quiz-system">9.1.3 Quiz System</h4>
+<ul>
+<li><strong>Multiple Quiz Types:</strong></li>
+<li>Privacy Basics</li>
+<li>Security Fundamentals</li>
+<li>AI Ethics</li>
+<li>Data Privacy</li>
+<li>Quick Challenge</li>
+<li><strong>Features:</strong></li>
+<li>Timed quizzes</li>
+<li>Multiple choice questions</li>
+<li>Immediate feedback</li>
+<li>Explanations for answers</li>
+<li>Score calculation</li>
+<li>Performance tracking</li>
+</ul>
+<p><strong>Total Questions:</strong> 46+ questions across 5 quiz types</p>
+<h4 id="914-learning-resources">9.1.4 Learning Resources</h4>
+<ul>
+<li><strong>Resource Library:</strong> 49 curated learning resources</li>
+<li><strong>Categories:</strong></li>
+<li>Privacy (22 resources)</li>
+<li>Data Security (17 resources)</li>
+<li>AI Ethics (10 resources)</li>
+<li><strong>Resource Types:</strong></li>
+<li>Research Papers (17)</li>
+<li>Articles (23)</li>
+<li>Videos (3)</li>
+<li>Courses (2)</li>
+<li>Tutorials (4)</li>
+<li><strong>ML-Powered Recommendations:</strong> Personalized suggestions based on user profile</li>
+</ul>
+<h4 id="915-profile-management">9.1.5 Profile Management</h4>
+<ul>
+<li><strong>Performance History:</strong> All quiz attempts</li>
+<li><strong>Statistics:</strong> Detailed performance metrics</li>
+<li><strong>Activity Timeline:</strong> Chronological activity log</li>
+</ul>
+<h3 id="92-admin-features">9.2 Admin Features</h3>
+<h4 id="921-admin-dashboard">9.2.1 Admin Dashboard</h4>
+<ul>
+<li><strong>Platform Statistics:</strong></li>
+<li>Total users</li>
+<li>Total quizzes taken</li>
+<li>Total activities</li>
+<li>Average scores</li>
+<li><strong>User Analytics:</strong> Individual user performance</li>
+<li><strong>Activity Monitoring:</strong> Real-time activity tracking</li>
+<li><strong>Visual Charts:</strong> Interactive data visualizations</li>
+</ul>
+<h4 id="922-content-management">9.2.2 Content Management</h4>
+<ul>
+<li><strong>Quiz Question Management:</strong></li>
+<li>Add new questions</li>
+<li>Edit existing questions</li>
+<li>Delete questions</li>
+<li>Organize by quiz type</li>
+<li><strong>Learning Resource Management:</strong></li>
+<li>Add resources</li>
+<li>Edit resources</li>
+<li>Delete resources</li>
+<li>Categorize resources</li>
+<li><strong>Settings Management:</strong></li>
+<li>Timezone configuration</li>
+<li>System settings</li>
+<li>ML model retraining</li>
+</ul>
+<h4 id="923-analytics">9.2.3 Analytics</h4>
+<ul>
+<li><strong>Daily Activity Charts:</strong> User engagement over time</li>
+<li><strong>Quiz Performance:</strong> Score distributions</li>
+<li><strong>User Statistics:</strong> Top performers</li>
+<li><strong>Activity Breakdown:</strong> Activity type analysis</li>
+</ul>
+<h3 id="93-public-features">9.3 Public Features</h3>
+<h4 id="931-landing-page">9.3.1 Landing Page</h4>
+<ul>
+<li><strong>Feature Overview:</strong> Learn, Quiz, Track Progress</li>
+<li><strong>Public Access:</strong> Preview of resources and quizzes</li>
+<li><strong>Call-to-Action:</strong> Registration and login buttons</li>
+</ul>
+<h4 id="932-public-resources">9.3.2 Public Resources</h4>
+<ul>
+<li><strong>Resource Preview:</strong> 6 featured resources</li>
+<li><strong>Sample Quiz:</strong> Preview of quiz questions</li>
+<li><strong>Educational Content:</strong> Basic privacy information</li>
+</ul>
+<hr />
+<h2 id="10-machine-learning-model">10. Machine Learning Model</h2>
+<h3 id="101-model-overview">10.1 Model Overview</h3>
+<p><strong>Algorithm:</strong> Random Forest Classifier<br />
+<strong>Purpose:</strong> Predict user knowledge level (Low/Medium/High)<br />
+<strong>Training Data:</strong> Survey responses from Google Sheets</p>
+<h3 id="102-model-architecture">10.2 Model Architecture</h3>
+<h4 id="1021-input-features">10.2.1 Input Features</h4>
+<ol>
+<li><strong>Demographic Features:</strong></li>
+<li>Age Range (18-21, 22-25, 26-30, 30+)</li>
+<li>Gender (Male, Female, Other)</li>
+<li>Academic Stream (B.Tech, BCA, MCA, etc.)</li>
+<li>
+<p>Year of Study (1st year, 2nd year, etc.)</p>
+</li>
+<li>
+<p><strong>Behavioral Features:</strong></p>
+</li>
+<li>Privacy Policy Reading Frequency</li>
+<li>App Permissions Review Frequency</li>
+<li>
+<p>Password Security Practices</p>
+</li>
+<li>
+<p><strong>Performance Features:</strong></p>
+</li>
+<li>Average Quiz Score</li>
+<li>Quiz Attempt History</li>
+</ol>
+<h4 id="1022-preprocessing">10.2.2 Preprocessing</h4>
+<ul>
+<li><strong>Label Encoding:</strong> Convert categorical features to numerical</li>
+<li><strong>Feature Scaling:</strong> Normalize numerical features</li>
+<li><strong>Missing Value Handling:</strong> Default value assignment</li>
+</ul>
+<h4 id="1023-model-training">10.2.3 Model Training</h4>
+<pre class="codehilite"><code class="language-python">Random Forest Parameters:
+- n_estimators: 100 (decision trees)
+- max_depth: 10
+- min_samples_split: 2
+- random_state: 42
+</code></pre>
+
+<h4 id="1024-prediction-process">10.2.4 Prediction Process</h4>
+<ol>
+<li><strong>User Data Collection:</strong> Gather profile and quiz performance</li>
+<li><strong>Feature Extraction:</strong> Prepare input features</li>
+<li><strong>Model Prediction:</strong> Predict knowledge level</li>
+<li><strong>Recommendation Generation:</strong> Generate personalized suggestions</li>
+</ol>
+<h3 id="103-recommendations-system">10.3 Recommendations System</h3>
+<p>Based on predicted knowledge level:</p>
+<p><strong>Low Knowledge Level:</strong>
+- Review privacy settings
+- Read privacy policies
+- Use different passwords
+- Learn about data collection</p>
+<p><strong>Medium Knowledge Level:</strong>
+- Advanced privacy settings
+- Two-factor authentication
+- Regular security audits
+- Stay updated on privacy news</p>
+<p><strong>High Knowledge Level:</strong>
+- Advanced security practices
+- Privacy-preserving technologies
+- Security certifications
+- Contribute to privacy education</p>
+<hr />
+<h2 id="11-database-design">11. Database Design</h2>
+<h3 id="111-database-schema">11.1 Database Schema</h3>
+<h4 id="1111-user-table">11.1.1 User Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>username</td>
+<td>String(80)</td>
+<td>Unique username</td>
+</tr>
+<tr>
+<td>email</td>
+<td>String(120)</td>
+<td>Unique email</td>
+</tr>
+<tr>
+<td>password_hash</td>
+<td>String(255)</td>
+<td>Hashed password</td>
+</tr>
+<tr>
+<td>is_admin</td>
+<td>Boolean</td>
+<td>Admin flag</td>
+</tr>
+<tr>
+<td>age_range</td>
+<td>String(50)</td>
+<td>Age range</td>
+</tr>
+<tr>
+<td>gender</td>
+<td>String(50)</td>
+<td>Gender</td>
+</tr>
+<tr>
+<td>academic_stream</td>
+<td>String(100)</td>
+<td>Academic stream</td>
+</tr>
+<tr>
+<td>year_of_study</td>
+<td>String(50)</td>
+<td>Year of study</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DateTime</td>
+<td>Registration date</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1112-quizquestion-table">11.1.2 QuizQuestion Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>question_text</td>
+<td>Text</td>
+<td>Question content</td>
+</tr>
+<tr>
+<td>option_a</td>
+<td>String(500)</td>
+<td>Option A</td>
+</tr>
+<tr>
+<td>option_b</td>
+<td>String(500)</td>
+<td>Option B</td>
+</tr>
+<tr>
+<td>option_c</td>
+<td>String(500)</td>
+<td>Option C</td>
+</tr>
+<tr>
+<td>option_d</td>
+<td>String(500)</td>
+<td>Option D</td>
+</tr>
+<tr>
+<td>correct_answer</td>
+<td>String(1)</td>
+<td>Correct answer (A/B/C/D)</td>
+</tr>
+<tr>
+<td>category</td>
+<td>String(100)</td>
+<td>Question category</td>
+</tr>
+<tr>
+<td>quiz_type</td>
+<td>String(100)</td>
+<td>Quiz type</td>
+</tr>
+<tr>
+<td>explanation</td>
+<td>Text</td>
+<td>Answer explanation</td>
+</tr>
+<tr>
+<td>difficulty</td>
+<td>String(20)</td>
+<td>Difficulty level</td>
+</tr>
+<tr>
+<td>time_limit</td>
+<td>Integer</td>
+<td>Time limit (seconds)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DateTime</td>
+<td>Creation date</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1113-quizattempt-table">11.1.3 QuizAttempt Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>Integer</td>
+<td>Foreign key to User</td>
+</tr>
+<tr>
+<td>quiz_type</td>
+<td>String(100)</td>
+<td>Quiz type</td>
+</tr>
+<tr>
+<td>score</td>
+<td>Integer</td>
+<td>Correct answers</td>
+</tr>
+<tr>
+<td>total_questions</td>
+<td>Integer</td>
+<td>Total questions</td>
+</tr>
+<tr>
+<td>percentage</td>
+<td>Float</td>
+<td>Score percentage</td>
+</tr>
+<tr>
+<td>time_taken</td>
+<td>Integer</td>
+<td>Time taken (seconds)</td>
+</tr>
+<tr>
+<td>time_limit</td>
+<td>Integer</td>
+<td>Time limit (seconds)</td>
+</tr>
+<tr>
+<td>answers</td>
+<td>Text (JSON)</td>
+<td>User answers</td>
+</tr>
+<tr>
+<td>completed_at</td>
+<td>DateTime</td>
+<td>Completion time</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1114-useractivity-table">11.1.4 UserActivity Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>Integer</td>
+<td>Foreign key to User</td>
+</tr>
+<tr>
+<td>activity_type</td>
+<td>String(50)</td>
+<td>Activity type</td>
+</tr>
+<tr>
+<td>description</td>
+<td>Text</td>
+<td>Activity description</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DateTime</td>
+<td>Activity timestamp</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1115-learningresource-table">11.1.5 LearningResource Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>title</td>
+<td>String(200)</td>
+<td>Resource title</td>
+</tr>
+<tr>
+<td>description</td>
+<td>Text</td>
+<td>Resource description</td>
+</tr>
+<tr>
+<td>url</td>
+<td>String(500)</td>
+<td>Resource URL</td>
+</tr>
+<tr>
+<td>category</td>
+<td>String(100)</td>
+<td>Resource category</td>
+</tr>
+<tr>
+<td>resource_type</td>
+<td>String(50)</td>
+<td>Resource type</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DateTime</td>
+<td>Creation date</td>
+</tr>
+</tbody>
+</table>
+<h4 id="1116-quiztype-table">11.1.6 QuizType Table</h4>
+<table>
+<thead>
+<tr>
+<th>Column</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>id</td>
+<td>Integer</td>
+<td>Primary key</td>
+</tr>
+<tr>
+<td>name</td>
+<td>String(100)</td>
+<td>Quiz type name</td>
+</tr>
+<tr>
+<td>description</td>
+<td>Text</td>
+<td>Description</td>
+</tr>
+<tr>
+<td>icon</td>
+<td>String(50)</td>
+<td>Icon class</td>
+</tr>
+<tr>
+<td>color</td>
+<td>String(20)</td>
+<td>Color theme</td>
+</tr>
+<tr>
+<td>time_limit</td>
+<td>Integer</td>
+<td>Time limit</td>
+</tr>
+<tr>
+<td>question_count</td>
+<td>Integer</td>
+<td>Number of questions</td>
+</tr>
+<tr>
+<td>difficulty</td>
+<td>String(20)</td>
+<td>Difficulty level</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DateTime</td>
+<td>Creation date</td>
+</tr>
+</tbody>
+</table>
+<h3 id="112-relationships">11.2 Relationships</h3>
+<ul>
+<li><strong>User → QuizAttempt:</strong> One-to-Many</li>
+<li><strong>User → UserActivity:</strong> One-to-Many</li>
+<li><strong>QuizQuestion → QuizAttempt:</strong> Many-to-Many (through answers)</li>
+</ul>
+<h3 id="113-database-statistics">11.3 Database Statistics</h3>
+<ul>
+<li><strong>Total Tables:</strong> 6</li>
+<li><strong>Total Users:</strong> Variable (grows with registrations)</li>
+<li><strong>Total Questions:</strong> 46+</li>
+<li><strong>Total Resources:</strong> 49</li>
+<li><strong>Quiz Types:</strong> 5</li>
+</ul>
+<hr />
+<h2 id="12-user-interface-design">12. User Interface Design</h2>
+<h3 id="121-design-philosophy">12.1 Design Philosophy</h3>
+<p><strong>Modern, Clean, Calm, Minimal, Energetic</strong></p>
+<p>The interface follows a modern design approach with:
+- Clean white backgrounds
+- Soft blue primary colors (#5B8DEF)
+- Energetic coral accents (#FF6B9D)
+- Minimal design elements
+- Smooth animations and transitions</p>
+<h3 id="122-color-palette">12.2 Color Palette</h3>
+<p><strong>Primary Colors:</strong>
+- Primary Blue: #5B8DEF
+- Primary Dark: #3D6BC7
+- Primary Light: #7BA3F5</p>
+<p><strong>Accent Colors:</strong>
+- Coral: #FF6B9D
+- Mint: #4DD4AC
+- Sunset: #FFB84D</p>
+<p><strong>Neutral Colors:</strong>
+- Background: #FFFFFF
+- Text Primary: #1A202C
+- Text Secondary: #4A5568
+- Text Muted: #718096</p>
+<h3 id="123-key-ui-components">12.3 Key UI Components</h3>
+<h4 id="1231-navigation-bar">12.3.1 Navigation Bar</h4>
+<ul>
+<li>Clean white background</li>
+<li>Gradient logo text</li>
+<li>Responsive mobile menu</li>
+<li>User authentication status</li>
+</ul>
+<h4 id="1232-cards">12.3.2 Cards</h4>
+<ul>
+<li>Rounded corners (16px)</li>
+<li>Subtle shadows</li>
+<li>Hover effects (lift animation)</li>
+<li>Gradient headers</li>
+</ul>
+<h4 id="1233-buttons">12.3.3 Buttons</h4>
+<ul>
+<li>Rounded corners (12px)</li>
+<li>Gradient backgrounds</li>
+<li>Hover animations</li>
+<li>Clear visual feedback</li>
+</ul>
+<h4 id="1234-forms">12.3.4 Forms</h4>
+<ul>
+<li>Clean input fields</li>
+<li>Focus states with blue borders</li>
+<li>Validation feedback</li>
+<li>Responsive layout</li>
+</ul>
+<h3 id="124-responsive-design">12.4 Responsive Design</h3>
+<ul>
+<li><strong>Mobile First:</strong> Optimized for mobile devices</li>
+<li><strong>Bootstrap 5:</strong> Responsive grid system</li>
+<li><strong>Flexible Layouts:</strong> Adapts to all screen sizes</li>
+<li><strong>Touch Friendly:</strong> Large clickable areas</li>
+</ul>
+<hr />
+<h2 id="13-testing-and-validation">13. Testing and Validation</h2>
+<h3 id="131-functional-testing">13.1 Functional Testing</h3>
+<h4 id="1311-user-authentication">13.1.1 User Authentication</h4>
+<ul>
+<li>✅ Registration with valid data</li>
+<li>✅ Registration with duplicate username/email (error handling)</li>
+<li>✅ Login with correct credentials</li>
+<li>✅ Login with incorrect credentials (error handling)</li>
+<li>✅ Logout functionality</li>
+<li>✅ Session management</li>
+</ul>
+<h4 id="1312-quiz-system">13.1.2 Quiz System</h4>
+<ul>
+<li>✅ Quiz selection and display</li>
+<li>✅ Answer submission</li>
+<li>✅ Score calculation</li>
+<li>✅ Time tracking</li>
+<li>✅ Results display</li>
+<li>✅ Database storage</li>
+</ul>
+<h4 id="1313-ml-model">13.1.3 ML Model</h4>
+<ul>
+<li>✅ Model loading</li>
+<li>✅ Prediction generation</li>
+<li>✅ Recommendation generation</li>
+<li>✅ Error handling (fallback recommendations)</li>
+</ul>
+<h4 id="1314-admin-features">13.1.4 Admin Features</h4>
+<ul>
+<li>✅ Content management (CRUD operations)</li>
+<li>✅ Analytics display</li>
+<li>✅ User statistics</li>
+<li>✅ Settings management</li>
+</ul>
+<h3 id="132-user-interface-testing">13.2 User Interface Testing</h3>
+<ul>
+<li>✅ Responsive design on multiple devices</li>
+<li>✅ Button functionality</li>
+<li>✅ Form validation</li>
+<li>✅ Navigation flow</li>
+<li>✅ Error message display</li>
+</ul>
+<h3 id="133-database-testing">13.3 Database Testing</h3>
+<ul>
+<li>✅ Data insertion</li>
+<li>✅ Data retrieval</li>
+<li>✅ Data updates</li>
+<li>✅ Data deletion</li>
+<li>✅ Foreign key relationships</li>
+<li>✅ Migration handling</li>
+</ul>
+<h3 id="134-security-testing">13.4 Security Testing</h3>
+<ul>
+<li>✅ Password hashing</li>
+<li>✅ SQL injection prevention (SQLAlchemy ORM)</li>
+<li>✅ XSS prevention (Jinja2 auto-escaping)</li>
+<li>✅ CSRF protection (Flask-WTF ready)</li>
+<li>✅ Authentication checks</li>
+<li>✅ Authorization checks</li>
+</ul>
+<hr />
+<h2 id="14-results-and-analysis">14. Results and Analysis</h2>
+<h3 id="141-platform-statistics">14.1 Platform Statistics</h3>
+<p><strong>Content:</strong>
+- 46+ quiz questions across 5 categories
+- 49 learning resources (research papers, articles, courses)
+- 5 quiz types with varying difficulty levels</p>
+<p><strong>Features Implemented:</strong>
+- ✅ User registration and authentication
+- ✅ Interactive quiz system
+- ✅ ML-powered recommendations
+- ✅ Comprehensive dashboard
+- ✅ Admin management panel
+- ✅ Learning resource library
+- ✅ Progress tracking
+- ✅ Analytics and reporting</p>
+<h3 id="142-user-experience">14.2 User Experience</h3>
+<p><strong>Positive Aspects:</strong>
+- Clean, modern interface
+- Intuitive navigation
+- Fast response times
+- Clear feedback messages
+- Responsive design</p>
+<p><strong>User Feedback Areas:</strong>
+- Easy to use
+- Helpful learning resources
+- Clear quiz explanations
+- Useful progress tracking</p>
+<h3 id="143-technical-performance">14.3 Technical Performance</h3>
+<ul>
+<li><strong>Application Load Time:</strong> &lt; 2 seconds</li>
+<li><strong>Database Queries:</strong> Optimized with indexes</li>
+<li><strong>ML Model Prediction:</strong> &lt; 100ms</li>
+<li><strong>Page Load Times:</strong> &lt; 1 second (average)</li>
+</ul>
+<hr />
+<h2 id="15-challenges-and-solutions">15. Challenges and Solutions</h2>
+<h3 id="151-technical-challenges">15.1 Technical Challenges</h3>
+<h4 id="challenge-1-package-installation-issues">Challenge 1: Package Installation Issues</h4>
+<p><strong>Problem:</strong> Compilation errors with numpy and pandas on Windows<br />
+<strong>Solution:</strong> Updated to versions with pre-built wheels, used <code>--only-binary</code> flag</p>
+<h4 id="challenge-2-database-schema-migration">Challenge 2: Database Schema Migration</h4>
+<p><strong>Problem:</strong> Adding new columns to existing database<br />
+<strong>Solution:</strong> Implemented manual migration logic using SQLAlchemy inspector</p>
+<h4 id="challenge-3-ml-model-integration">Challenge 3: ML Model Integration</h4>
+<p><strong>Problem:</strong> Model loading and error handling<br />
+<strong>Solution:</strong> Implemented lazy loading with fallback recommendations</p>
+<h4 id="challenge-4-timezone-handling">Challenge 4: Timezone Handling</h4>
+<p><strong>Problem:</strong> Timestamps displayed in UTC<br />
+<strong>Solution:</strong> Implemented timezone conversion with pytz, added Jinja2 filters</p>
+<h3 id="152-design-challenges">15.2 Design Challenges</h3>
+<h4 id="challenge-1-color-palette-selection">Challenge 1: Color Palette Selection</h4>
+<p><strong>Problem:</strong> Finding balance between professional and energetic<br />
+<strong>Solution:</strong> Chose modern, clean palette with strategic accent colors</p>
+<h4 id="challenge-2-responsive-design">Challenge 2: Responsive Design</h4>
+<p><strong>Problem:</strong> Ensuring functionality across devices<br />
+<strong>Solution:</strong> Used Bootstrap 5 grid system and mobile-first approach</p>
+<h3 id="153-feature-challenges">15.3 Feature Challenges</h3>
+<h4 id="challenge-1-public-access-vs-authentication">Challenge 1: Public Access vs. Authentication</h4>
+<p><strong>Problem:</strong> Balancing public preview with secure features<br />
+<strong>Solution:</strong> Created separate public routes for preview, full features require login</p>
+<h4 id="challenge-2-resource-url-management">Challenge 2: Resource URL Management</h4>
+<p><strong>Problem:</strong> Invalid or broken resource links<br />
+<strong>Solution:</strong> Implemented URL validation and error handling</p>
+<hr />
+<h2 id="16-future-enhancements">16. Future Enhancements</h2>
+<h3 id="161-short-term-enhancements">16.1 Short-term Enhancements</h3>
+<ol>
+<li><strong>Enhanced ML Model:</strong></li>
+<li>More training data</li>
+<li>Feature engineering improvements</li>
+<li>
+<p>Model performance optimization</p>
+</li>
+<li>
+<p><strong>Additional Quiz Types:</strong></p>
+</li>
+<li>Advanced security topics</li>
+<li>Industry-specific quizzes</li>
+<li>
+<p>Certification quizzes</p>
+</li>
+<li>
+<p><strong>Social Features:</strong></p>
+</li>
+<li>Leaderboards</li>
+<li>User achievements</li>
+<li>
+<p>Social sharing</p>
+</li>
+<li>
+<p><strong>Notifications:</strong></p>
+</li>
+<li>Email notifications</li>
+<li>In-app notifications</li>
+<li>Progress reminders</li>
+</ol>
+<h3 id="162-long-term-enhancements">16.2 Long-term Enhancements</h3>
+<ol>
+<li><strong>Mobile Application:</strong></li>
+<li>Native iOS/Android apps</li>
+<li>Push notifications</li>
+<li>
+<p>Offline mode</p>
+</li>
+<li>
+<p><strong>Advanced Analytics:</strong></p>
+</li>
+<li>Predictive analytics</li>
+<li>Learning path recommendations</li>
+<li>
+<p>Performance forecasting</p>
+</li>
+<li>
+<p><strong>Gamification:</strong></p>
+</li>
+<li>Points and badges</li>
+<li>Streak tracking</li>
+<li>
+<p>Challenges and competitions</p>
+</li>
+<li>
+<p><strong>Content Expansion:</strong></p>
+</li>
+<li>Video tutorials</li>
+<li>Interactive simulations</li>
+<li>
+<p>Case studies</p>
+</li>
+<li>
+<p><strong>Integration:</strong></p>
+</li>
+<li>LMS integration</li>
+<li>API for third-party apps</li>
+<li>Single Sign-On (SSO)</li>
+</ol>
+<hr />
+<h2 id="17-conclusion">17. Conclusion</h2>
+<p>The Digital Awareness Platform successfully addresses the need for accessible, personalized education in digital privacy, data security, and AI ethics. The platform combines modern web technologies with machine learning to provide an engaging, effective learning experience.</p>
+<h3 id="171-key-achievements">17.1 Key Achievements</h3>
+<ol>
+<li><strong>Comprehensive Platform:</strong> Full-featured web application with user and admin interfaces</li>
+<li><strong>ML Integration:</strong> Successfully implemented ML-powered personalization</li>
+<li><strong>Rich Content:</strong> 49 curated learning resources and 46+ quiz questions</li>
+<li><strong>Modern Design:</strong> Clean, professional, responsive user interface</li>
+<li><strong>Robust Architecture:</strong> Scalable, maintainable codebase</li>
+</ol>
+<h3 id="172-learning-outcomes">17.2 Learning Outcomes</h3>
+<ul>
+<li>Gained expertise in Flask web development</li>
+<li>Implemented machine learning in real-world application</li>
+<li>Designed and developed database schemas</li>
+<li>Created responsive, modern user interfaces</li>
+<li>Integrated multiple technologies and APIs</li>
+</ul>
+<h3 id="173-impact">17.3 Impact</h3>
+<p>The platform provides:
+- <strong>Educational Value:</strong> Helps users understand digital privacy and security
+- <strong>Personalization:</strong> ML-powered recommendations improve learning outcomes
+- <strong>Accessibility:</strong> Free, web-based platform accessible to all
+- <strong>Scalability:</strong> Architecture supports future enhancements</p>
+<h3 id="174-final-remarks">17.4 Final Remarks</h3>
+<p>This project demonstrates the successful integration of web development, machine learning, and user experience design to create a valuable educational tool. The platform is ready for deployment and can serve as a foundation for future enhancements and expansions.</p>
+<hr />
+<h2 id="18-references">18. References</h2>
+<h3 id="181-technologies-and-frameworks">18.1 Technologies and Frameworks</h3>
+<ol>
+<li>Flask Documentation: https://flask.palletsprojects.com/</li>
+<li>SQLAlchemy Documentation: https://www.sqlalchemy.org/</li>
+<li>scikit-learn Documentation: https://scikit-learn.org/</li>
+<li>Bootstrap 5 Documentation: https://getbootstrap.com/</li>
+<li>Font Awesome: https://fontawesome.com/</li>
+</ol>
+<h3 id="182-research-and-standards">18.2 Research and Standards</h3>
+<ol>
+<li>GDPR - General Data Protection Regulation</li>
+<li>NIST Cybersecurity Framework</li>
+<li>OWASP Top 10 Security Risks</li>
+<li>Privacy by Design Principles</li>
+</ol>
+<h3 id="183-learning-resources">18.3 Learning Resources</h3>
+<ol>
+<li>IEEE Security &amp; Privacy Papers</li>
+<li>Nature Research Articles</li>
+<li>arXiv Open Access Papers</li>
+<li>Educational Platforms (Coursera, edX)</li>
+</ol>
+<hr />
+<h2 id="appendices">Appendices</h2>
+<h3 id="appendix-a-installation-instructions">Appendix A: Installation Instructions</h3>
+<ol>
+<li>Install Python 3.13 or higher</li>
+<li>Install dependencies: <code>pip install -r requirements.txt</code></li>
+<li>Run application: <code>python app.py</code></li>
+<li>Access at: <code>http://localhost:5000</code></li>
+<li>Default admin: username <code>admin</code>, password <code>admin123</code></li>
+</ol>
+<h3 id="appendix-b-project-files">Appendix B: Project Files</h3>
+<p><strong>Core Files:</strong>
+- <code>app.py</code> - Main application (1,838 lines)
+- <code>ml_model.py</code> - ML model implementation
+- <code>google_sheets_integration.py</code> - Google Sheets API
+- <code>setup.py</code> - Database initialization</p>
+<p><strong>Templates:</strong> 17 HTML template files<br />
+<strong>Static Assets:</strong> CSS and JavaScript files<br />
+<strong>Database:</strong> SQLite database file</p>
+<h3 id="appendix-c-api-endpoints">Appendix C: API Endpoints</h3>
+<p><strong>Public Routes:</strong>
+- <code>/</code> - Landing page
+- <code>/register</code> - User registration
+- <code>/login</code> - User login
+- <code>/learn/public</code> - Public resources preview
+- <code>/quiz/public</code> - Public quiz preview</p>
+<p><strong>Authenticated Routes:</strong>
+- <code>/home</code> - User home page
+- <code>/dashboard</code> - User dashboard
+- <code>/quiz</code> - Quiz selection
+- <code>/quiz/&lt;type&gt;</code> - Take quiz
+- <code>/learn</code> - Learning resources
+- <code>/profile</code> - User profile</p>
+<p><strong>Admin Routes:</strong>
+- <code>/admin</code> - Admin dashboard
+- <code>/admin/manage/questions</code> - Question management
+- <code>/admin/manage/resources</code> - Resource management
+- <code>/admin/settings</code> - Settings</p>
+<h3 id="appendix-d-database-schema-diagram">Appendix D: Database Schema Diagram</h3>
+<pre class="codehilite"><code>User (1) ──&lt; (Many) QuizAttempt
+User (1) ──&lt; (Many) UserActivity
+QuizQuestion (Many) ──&lt; (Many) QuizAttempt (through answers)
+</code></pre>
+
+<hr />
+<p><strong>Report Generated:</strong> 2025<br />
+<strong>Project Status:</strong> Completed<br />
+<strong>Version:</strong> 1.0</p>
+<hr />
+<p><em>This report documents the complete development process, features, and implementation details of the Digital Awareness Platform.</em></p>
+</body>
+</html>

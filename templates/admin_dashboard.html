@@ -224,7 +224,12 @@ const colorPalette = [
 ];
 
 fetch('{{ url_for("analytics") }}')
-    .then(response => response.json())
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Failed to fetch analytics data');
+        }
+        return response.json();
+    })
     .then(data => {
         const sortedActivityDates = Object.keys(data.daily_activity).sort();
         const dailyActivityValues = sortedActivityDates.map(d => data.daily_activity[d]);
@@ -338,7 +343,18 @@ fetch('{{ url_for("analytics") }}')
             }
         });
     })
-    .catch(error => console.error('Error loading analytics:', error));
+    .catch(error => {
+        console.error('Error loading analytics:', error);
+        // Show user-friendly error message
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'alert alert-warning alert-dismissible fade show';
+        errorDiv.innerHTML = `
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Unable to load analytics charts. Data may be limited.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        document.querySelector('.row.mb-4').after(errorDiv);
+    });
 
 // Update ML Model
 function updateMLModel() {
