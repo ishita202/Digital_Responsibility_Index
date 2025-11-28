@@ -82,8 +82,32 @@ class DigitalAwarenessML:
         
         return pd.DataFrame(data)
     
+    def map_survey_columns(self, df):
+        """Map survey column names to standardized names"""
+        column_mapping = {}
+        for col in df.columns:
+            col_lower = str(col).lower()
+            if 'age' in col_lower and 'range' in col_lower:
+                column_mapping[col] = 'Age_Range'
+            elif 'gender' in col_lower:
+                column_mapping[col] = 'Gender'
+            elif ('educational' in col_lower or 'academic' in col_lower) and 'background' in col_lower:
+                column_mapping[col] = 'Academic_Stream'
+            elif 'current level of study' in col_lower or ('level' in col_lower and 'study' in col_lower):
+                column_mapping[col] = 'Year_of_Study'
+            elif 'privacy policy' in col_lower:
+                column_mapping[col] = 'Privacy_Policy_Reading'
+            elif 'app permissions' in col_lower and 'review' in col_lower:
+                column_mapping[col] = 'App_Permissions_Review'
+            elif 'different passwords' in col_lower:
+                column_mapping[col] = 'Different_Passwords'
+        return df.rename(columns=column_mapping)
+    
     def preprocess_data(self, df):
         """Preprocess data for ML model"""
+        # Map column names first
+        df = self.map_survey_columns(df)
+        
         # Select features
         feature_cols = ['Age_Range', 'Gender', 'Academic_Stream', 'Year_of_Study',
                        'Privacy_Policy_Reading', 'App_Permissions_Review', 'Different_Passwords']

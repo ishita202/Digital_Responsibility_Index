@@ -195,23 +195,136 @@ def build_awareness_insights():
         bins=[-0.1, 40, 70, 100],
         labels=['Low', 'Medium', 'High']
     )
+    
+    # Basic summary statistics
     summary = {
         'respondent_count': int(len(df)),
         'average_score': round(float(df['Knowledge_Score'].mean()), 1),
         'median_score': round(float(df['Knowledge_Score'].median()), 1),
-        'high_percentage': round(float((df['Knowledge_Level'] == 'High').mean() * 100), 1)
+        'high_percentage': round(float((df['Knowledge_Level'] == 'High').mean() * 100), 1),
+        'std_score': round(float(df['Knowledge_Score'].std()), 1),
+        'min_score': round(float(df['Knowledge_Score'].min()), 1),
+        'max_score': round(float(df['Knowledge_Score'].max()), 1)
     }
+    
+    # Score distribution
     score_distribution = {
         'Low': int((df['Knowledge_Score'] < 40).sum()),
         'Medium': int(((df['Knowledge_Score'] >= 40) & (df['Knowledge_Score'] < 70)).sum()),
         'High': int((df['Knowledge_Score'] >= 70).sum())
     }
+    
+    # Demographics analysis
     avg_by_age = df.groupby('Age_Range')['Knowledge_Score'].mean().dropna().round(1).to_dict()
     avg_by_gender = df.groupby('Gender')['Knowledge_Score'].mean().dropna().round(1).to_dict()
-    privacy_policy_counts = df['Privacy_Policy_Reading'].value_counts().to_dict() if 'Privacy_Policy_Reading' in df else {}
-    permissions_counts = df['App_Permissions_Review'].value_counts().to_dict() if 'App_Permissions_Review' in df else {}
-    password_counts = df['Different_Passwords'].value_counts().to_dict() if 'Different_Passwords' in df else {}
+    
+    # Educational background analysis
+    avg_by_education = {}
+    if 'Academic_Stream' in df.columns:
+        avg_by_education = df.groupby('Academic_Stream')['Knowledge_Score'].mean().dropna().round(1).to_dict()
+        education_counts = df['Academic_Stream'].value_counts().to_dict()
+    else:
+        education_counts = {}
+    
+    # Year of study analysis
+    avg_by_year = {}
+    year_counts = {}
+    if 'Year_of_Study' in df.columns:
+        avg_by_year = df.groupby('Year_of_Study')['Knowledge_Score'].mean().dropna().round(1).to_dict()
+        year_counts = df['Year_of_Study'].value_counts().to_dict()
+    
+    # Privacy behaviors
+    privacy_policy_counts = df['Privacy_Policy_Reading'].value_counts().to_dict() if 'Privacy_Policy_Reading' in df.columns else {}
+    permissions_counts = df['App_Permissions_Review'].value_counts().to_dict() if 'App_Permissions_Review' in df.columns else {}
+    password_counts = df['Different_Passwords'].value_counts().to_dict() if 'Different_Passwords' in df.columns else {}
+    
+    # Uninstall behavior
+    uninstall_counts = {}
+    if 'Uninstall_Due_Privacy' in df.columns:
+        uninstall_counts = df['Uninstall_Due_Privacy'].value_counts().to_dict()
+    
+    # Social media permissions
+    social_perms_counts = {}
+    if 'Social_App_Permissions' in df.columns:
+        social_perms_counts = df['Social_App_Permissions'].value_counts().to_dict()
+    
+    # Privacy settings review frequency
+    privacy_settings_counts = {}
+    if 'Privacy_Settings_Review' in df.columns:
+        privacy_settings_counts = df['Privacy_Settings_Review'].value_counts().to_dict()
+    
+    # AI Ethics questions analysis
+    ai_mental_health_counts = {}
+    ai_targeted_ads_counts = {}
+    ai_tracking_comfort_counts = {}
+    ai_accountability_counts = {}
+    
+    # Check for AI-related columns in original format
+    for col in df.columns:
+        col_lower = str(col).lower()
+        if 'ai' in col_lower and ('mental' in col_lower or 'social media posts' in col_lower):
+            ai_mental_health_counts = df[col].value_counts().to_dict()
+        elif 'search history' in col_lower and 'targeted ads' in col_lower:
+            ai_targeted_ads_counts = df[col].value_counts().to_dict()
+        elif 'ai tracked' in col_lower or ('online habits' in col_lower and 'mental health' in col_lower):
+            ai_tracking_comfort_counts = df[col].value_counts().to_dict()
+        elif 'accountable' in col_lower and 'ai' in col_lower:
+            # This might be a multi-select, so we'll count unique values
+            all_values = []
+            for val in df[col].dropna():
+                if isinstance(val, str) and ',' in val:
+                    all_values.extend([v.strip() for v in val.split(',')])
+                else:
+                    all_values.append(str(val))
+            if all_values:
+                ai_accountability_counts = pd.Series(all_values).value_counts().to_dict()
+    
+    # Knowledge check questions breakdown
+    knowledge_incognito_correct = 0
+    knowledge_anonymous_correct = 0
+    knowledge_social_correct = 0
+    knowledge_total = 0
+    
+    for col in df.columns:
+        col_lower = str(col).lower()
+        if 'incognito' in col_lower and 'isp' in col_lower:
+            knowledge_total += 1
+            # False is correct answer
+            correct_answers = df[col].apply(lambda x: str(x).strip().lower() in ['0.0', '0', 'false', 'b', 'incorrect', 'no'])
+            knowledge_incognito_correct = int(correct_answers.sum())
+        elif 'anonymous' in col_lower and ('trace' in col_lower or 'impossible' in col_lower):
+            knowledge_total += 1
+            # False is correct answer
+            correct_answers = df[col].apply(lambda x: str(x).strip().lower() in ['0.0', '0', 'false', 'b', 'incorrect', 'no'])
+            knowledge_anonymous_correct = int(correct_answers.sum())
+        elif 'social media' in col_lower and 'messages' in col_lower:
+            knowledge_total += 1
+            # True is correct answer
+            correct_answers = df[col].apply(lambda x: str(x).strip().lower() in ['1.0', '1', 'true', 'a', 'correct', 'yes'])
+            knowledge_social_correct = int(correct_answers.sum())
+    
+    knowledge_breakdown = {
+        'incognito': {'correct': knowledge_incognito_correct, 'total': len(df) if knowledge_total > 0 else 0},
+        'anonymous': {'correct': knowledge_anonymous_correct, 'total': len(df) if knowledge_total > 0 else 0},
+        'social_media': {'correct': knowledge_social_correct, 'total': len(df) if knowledge_total > 0 else 0}
+    }
+    
+    # AI Trust levels
+    trust_music_scores = []
+    trust_exams_scores = []
+    for col in df.columns:
+        col_lower = str(col).lower()
+        if 'trust ai' in col_lower and 'music' in col_lower:
+            trust_music_scores = df[col].dropna().astype(float).tolist()
+        elif 'trust ai' in col_lower and 'exam' in col_lower:
+            trust_exams_scores = df[col].dropna().astype(float).tolist()
+    
+    trust_music_avg = round(float(np.mean(trust_music_scores)), 1) if trust_music_scores else 0
+    trust_exams_avg = round(float(np.mean(trust_exams_scores)), 1) if trust_exams_scores else 0
+    
+    # Timeline analysis
     timeline = []
+    timeline_daily = []
     if 'Timestamp' in df.columns:
         timeline_series = (
             pd.to_datetime(df['Timestamp'], errors='coerce')
@@ -220,17 +333,58 @@ def build_awareness_insights():
             .dropna(subset=['Timestamp'])
         )
         if not timeline_series.empty:
+            # Daily averages
             timeline_grouped = timeline_series.groupby(timeline_series['Timestamp'].dt.date)['Knowledge_Score'].mean().round(1)
             timeline = [{'date': str(idx), 'score': float(val)} for idx, val in timeline_grouped.items()]
+            
+            # Hourly pattern (if we have enough data)
+            timeline_series['Hour'] = timeline_series['Timestamp'].dt.hour
+            hourly_avg = timeline_series.groupby('Hour')['Knowledge_Score'].mean().round(1)
+            timeline_daily = [{'hour': int(idx), 'score': float(val)} for idx, val in hourly_avg.items()]
+    
+    # Score histogram data (for distribution chart)
+    score_ranges = ['0-20', '21-40', '41-60', '61-80', '81-100']
+    score_histogram = {
+        '0-20': int(((df['Knowledge_Score'] >= 0) & (df['Knowledge_Score'] <= 20)).sum()),
+        '21-40': int(((df['Knowledge_Score'] > 20) & (df['Knowledge_Score'] <= 40)).sum()),
+        '41-60': int(((df['Knowledge_Score'] > 40) & (df['Knowledge_Score'] <= 60)).sum()),
+        '61-80': int(((df['Knowledge_Score'] > 60) & (df['Knowledge_Score'] <= 80)).sum()),
+        '81-100': int((df['Knowledge_Score'] > 80).sum())
+    }
+    
+    # Curriculum opinion
+    curriculum_counts = {}
+    for col in df.columns:
+        if 'curriculum' in str(col).lower() and 'university' in str(col).lower():
+            curriculum_counts = df[col].value_counts().to_dict()
+            break
+    
     return {
         'summary': summary,
         'score_distribution': score_distribution,
+        'score_histogram': score_histogram,
         'avg_by_age': avg_by_age,
         'avg_by_gender': avg_by_gender,
+        'avg_by_education': avg_by_education,
+        'education_counts': education_counts,
+        'avg_by_year': avg_by_year,
+        'year_counts': year_counts,
         'privacy_policy_counts': privacy_policy_counts,
         'permissions_counts': permissions_counts,
         'password_counts': password_counts,
+        'uninstall_counts': uninstall_counts,
+        'social_perms_counts': social_perms_counts,
+        'privacy_settings_counts': privacy_settings_counts,
+        'ai_mental_health_counts': ai_mental_health_counts,
+        'ai_targeted_ads_counts': ai_targeted_ads_counts,
+        'ai_tracking_comfort_counts': ai_tracking_comfort_counts,
+        'ai_accountability_counts': ai_accountability_counts,
+        'knowledge_breakdown': knowledge_breakdown,
+        'trust_music_avg': trust_music_avg,
+        'trust_exams_avg': trust_exams_avg,
+        'curriculum_counts': curriculum_counts,
         'timeline': timeline,
+        'timeline_daily': timeline_daily,
         'raw_scores': df['Knowledge_Score'].fillna(0).round(1).tolist()
     }
 # Google Sheets Configuration
@@ -1288,12 +1442,29 @@ def visualizations():
         data_available=True,
         summary=insights['summary'],
         score_distribution=json.dumps(insights['score_distribution']),
+        score_histogram=json.dumps(insights['score_histogram']),
         avg_by_age=json.dumps(insights['avg_by_age']),
         avg_by_gender=json.dumps(insights['avg_by_gender']),
+        avg_by_education=json.dumps(insights['avg_by_education']),
+        education_counts=json.dumps(insights['education_counts']),
+        avg_by_year=json.dumps(insights['avg_by_year']),
+        year_counts=json.dumps(insights['year_counts']),
         privacy_policy_counts=json.dumps(insights['privacy_policy_counts']),
         permissions_counts=json.dumps(insights['permissions_counts']),
         password_counts=json.dumps(insights['password_counts']),
+        uninstall_counts=json.dumps(insights['uninstall_counts']),
+        social_perms_counts=json.dumps(insights['social_perms_counts']),
+        privacy_settings_counts=json.dumps(insights['privacy_settings_counts']),
+        ai_mental_health_counts=json.dumps(insights['ai_mental_health_counts']),
+        ai_targeted_ads_counts=json.dumps(insights['ai_targeted_ads_counts']),
+        ai_tracking_comfort_counts=json.dumps(insights['ai_tracking_comfort_counts']),
+        ai_accountability_counts=json.dumps(insights['ai_accountability_counts']),
+        knowledge_breakdown=json.dumps(insights['knowledge_breakdown']),
+        trust_music_avg=insights['trust_music_avg'],
+        trust_exams_avg=insights['trust_exams_avg'],
+        curriculum_counts=json.dumps(insights['curriculum_counts']),
         timeline=json.dumps(insights['timeline']),
+        timeline_daily=json.dumps(insights['timeline_daily']),
         raw_scores=json.dumps(insights['raw_scores'])
     )
 

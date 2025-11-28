@@ -1,168 +1,547 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-12 d-flex justify-content-between align-items-center">
-        <div>
-            <h2><i class="fas fa-chart-pie me-2"></i>Awareness Index Visualizations</h2>
-            <p class="text-muted mb-0">Insights generated from the Project Survey responses.</p>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="fas fa-chart-bar me-2"></i>Comprehensive Survey Analytics Dashboard</h2>
+                    <p class="text-muted mb-0">Detailed insights from {{ summary.respondent_count }} survey responses</p>
+                </div>
+                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+                </a>
+            </div>
         </div>
-        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-secondary">
-            <i class="fas fa-arrow-left me-2"></i>Back to Admin Dashboard
-        </a>
     </div>
-</div>
 
-{% if not data_available %}
+    {% if not data_available %}
     <div class="alert alert-warning">
         <i class="fas fa-info-circle me-2"></i>
         Survey file not found. Please place <code>survey_data_backup.csv</code> or <code>Project Survey (Responses).xlsx</code> in the project root.
     </div>
-{% else %}
-<div class="row mb-4">
-    <div class="col-md-3 mb-3">
-        <div class="card text-white bg-primary h-100">
-            <div class="card-body">
-                <h6 class="text-uppercase text-white-50">Respondents</h6>
-                <h3 class="mb-0">{{ summary.respondent_count }}</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card text-white bg-success h-100">
-            <div class="card-body">
-                <h6 class="text-uppercase text-white-50">Average Score</h6>
-                <h3 class="mb-0">{{ summary.average_score }}%</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card text-white bg-info h-100">
-            <div class="card-body">
-                <h6 class="text-uppercase text-white-50">Median Score</h6>
-                <h3 class="mb-0">{{ summary.median_score }}%</h3>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="card text-white bg-warning h-100">
-            <div class="card-body">
-                <h6 class="text-uppercase text-white-50">High Awareness</h6>
-                <h3 class="mb-0">{{ summary.high_percentage }}%</h3>
-            </div>
-        </div>
-    </div>
-</div>
+    {% else %}
 
-<div class="row mb-4">
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-primary text-white">
-                <h5 class="mb-0"><i class="fas fa-signal me-2"></i>Knowledge Score Distribution</h5>
+    <!-- Summary Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-primary h-100 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-white-50 mb-2">Total Respondents</h6>
+                    <h2 class="mb-0">{{ summary.respondent_count }}</h2>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="scoreDistributionChart"></canvas>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-success h-100 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-white-50 mb-2">Average Score</h6>
+                    <h2 class="mb-0">{{ summary.average_score }}%</h2>
+                    <small class="text-white-50">Median: {{ summary.median_score }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-info h-100 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-white-50 mb-2">Score Range</h6>
+                    <h2 class="mb-0">{{ summary.min_score }}% - {{ summary.max_score }}%</h2>
+                    <small class="text-white-50">Std Dev: {{ summary.std_score }}%</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3 mb-3">
+            <div class="card text-white bg-warning h-100 shadow-sm">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-white-50 mb-2">High Awareness</h6>
+                    <h2 class="mb-0">{{ summary.high_percentage }}%</h2>
+                    <small class="text-white-50">Score ≥ 70%</small>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-success text-white">
-                <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Knowledge Trend Over Time</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="timelineChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row mb-4">
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-info text-white">
-                <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Average Score by Age Range</h5>
+    <!-- Section 1: Knowledge Score Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-brain me-2"></i>Knowledge Score Analysis</h4>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Knowledge Level Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="scoreDistributionChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="ageChart"></canvas>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Score Histogram</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="scoreHistogramChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-6 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-secondary text-white">
-                <h5 class="mb-0"><i class="fas fa-venus-mars me-2"></i>Average Score by Gender</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="genderChart"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
 
-<div class="row mb-4">
-    <div class="col-lg-4 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-dark text-white">
-                <h5 class="mb-0"><i class="fas fa-book-reader me-2"></i>Privacy Policy Reading Habits</h5>
+    <!-- Section 2: Demographics Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-users me-2"></i>Demographics Analysis</h4>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-birthday-cake me-2"></i>Average Score by Age</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="ageChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="privacyChart"></canvas>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-venus-mars me-2"></i>Average Score by Gender</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="genderChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Average Score by Education</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="educationChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-warning text-dark">
-                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>App Permission Reviews</h5>
+
+    <!-- Section 3: Educational Background Details -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-university me-2"></i>Educational Background Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="educationCountsChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="permissionsChart"></canvas>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Year of Study Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="yearCountsChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
-    <div class="col-lg-4 mb-4">
-        <div class="card h-100 shadow">
-            <div class="card-header bg-danger text-white">
-                <h5 class="mb-0"><i class="fas fa-key me-2"></i>Password Practices</h5>
+
+    <!-- Section 4: Privacy Behaviors -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-shield-alt me-2"></i>Privacy & Security Behaviors</h4>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-book-reader me-2"></i>Privacy Policy Reading</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="privacyChart"></canvas>
+                </div>
             </div>
-            <div class="card-body">
-                <canvas id="passwordChart"></canvas>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-mobile-alt me-2"></i>App Permission Reviews</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="permissionsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-key me-2"></i>Password Practices</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="passwordChart"></canvas>
+                </div>
             </div>
         </div>
     </div>
+
+    <!-- Section 5: Additional Privacy Behaviors -->
+    <div class="row mb-4">
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-trash-alt me-2"></i>App Uninstall Behavior</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="uninstallChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-share-alt me-2"></i>Social Media Permissions</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="socialPermsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-cog me-2"></i>Privacy Settings Review</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="privacySettingsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 6: AI Ethics Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-robot me-2"></i>AI Ethics & Trust Analysis</h4>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0"><i class="fas fa-brain me-2"></i>AI Mental Health Analysis</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="aiMentalHealthChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-ad me-2"></i>Targeted Ads Opinion</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="aiTargetedAdsChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-shield me-2"></i>AI Tracking Comfort</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="aiTrackingChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-balance-scale me-2"></i>AI Accountability</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="aiAccountabilityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 7: AI Trust Levels -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-music me-2"></i>AI Trust - Music Recommendations</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-success">{{ trust_music_avg }}/5.0</h1>
+                    <p class="text-muted">Average Trust Level</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>AI Trust - Exam Monitoring</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h1 class="display-4 text-primary">{{ trust_exams_avg }}/5.0</h1>
+                    <p class="text-muted">Average Trust Level</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 8: Knowledge Check Breakdown -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-question-circle me-2"></i>Knowledge Check Questions Breakdown</h4>
+        </div>
+        <div class="col-lg-12 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Question Accuracy</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="knowledgeBreakdownChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 9: Timeline Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3"><i class="fas fa-clock me-2"></i>Time-Based Analysis</h4>
+        </div>
+        <div class="col-lg-12 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-line me-2"></i>Knowledge Score Trend Over Time</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="timelineChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section 10: Curriculum Opinion -->
+    <div class="row mb-4">
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-book me-2"></i>Curriculum Opinion</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="curriculumChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}
 
 {% block scripts %}
 {% if data_available %}
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// Data from backend
 const dataScoreDistribution = {{ score_distribution | safe }};
+const dataScoreHistogram = {{ score_histogram | safe }};
 const dataAvgByAge = {{ avg_by_age | safe }};
 const dataAvgByGender = {{ avg_by_gender | safe }};
+const dataAvgByEducation = {{ avg_by_education | safe }};
+const dataEducationCounts = {{ education_counts | safe }};
+const dataYearCounts = {{ year_counts | safe }};
 const dataPrivacyCounts = {{ privacy_policy_counts | safe }};
 const dataPermissionsCounts = {{ permissions_counts | safe }};
 const dataPasswordCounts = {{ password_counts | safe }};
+const dataUninstallCounts = {{ uninstall_counts | safe }};
+const dataSocialPermsCounts = {{ social_perms_counts | safe }};
+const dataPrivacySettingsCounts = {{ privacy_settings_counts | safe }};
+const dataAIMentalHealth = {{ ai_mental_health_counts | safe }};
+const dataAITargetedAds = {{ ai_targeted_ads_counts | safe }};
+const dataAITracking = {{ ai_tracking_comfort_counts | safe }};
+const dataAIAccountability = {{ ai_accountability_counts | safe }};
+const dataKnowledgeBreakdown = {{ knowledge_breakdown | safe }};
+const dataCurriculum = {{ curriculum_counts | safe }};
 const dataTimeline = {{ timeline | safe }};
+const dataTimelineDaily = {{ timeline_daily | safe }};
 
 const palette = ['#4e79a7','#f28e2b','#e15759','#76b7b2','#59a14f','#edc949','#af7aa1','#ff9da7','#9c755f','#bab0ab'];
 
-function buildBarChart(ctxId, labels, values, color='#4e79a7', horizontal=false) {
+// Helper function for bar charts
+function buildBarChart(ctxId, labels, values, color='#4e79a7', title='') {
     return new Chart(document.getElementById(ctxId), {
-        type: horizontal ? 'bar' : 'bar',
+        type: 'bar',
         data: {
-            labels,
+            labels: labels,
             datasets: [{
-                label: 'Score (%)',
+                label: title || 'Value',
                 data: values,
-                backgroundColor: color
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1
             }]
         },
         options: {
             responsive: true,
-            indexAxis: horizontal ? 'y' : 'x',
+            maintainAspectRatio: true,
+            scales: {
+                y: { beginAtZero: true }
+            },
+            plugins: {
+                legend: { display: false }
+            }
+        }
+    });
+}
+
+// Helper function for pie/doughnut charts
+function buildPieChart(ctxId, labels, values, title='') {
+    return new Chart(document.getElementById(ctxId), {
+        type: 'pie',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: palette.slice(0, labels.length)
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+}
+
+// 1. Knowledge Level Distribution
+new Chart(document.getElementById('scoreDistributionChart'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(dataScoreDistribution),
+        datasets: [{
+            data: Object.values(dataScoreDistribution),
+            backgroundColor: ['#e15759', '#f28e2b', '#59a14f']
+        }]
+    },
+    options: {
+        responsive: true,
+        plugins: {
+            legend: { position: 'bottom' }
+        }
+    }
+});
+
+// 2. Score Histogram
+buildBarChart('scoreHistogramChart', Object.keys(dataScoreHistogram), Object.values(dataScoreHistogram), '#59a14f', 'Number of Respondents');
+
+// 3. Average Score by Age
+if (Object.keys(dataAvgByAge).length > 0) {
+    buildBarChart('ageChart', Object.keys(dataAvgByAge), Object.values(dataAvgByAge), '#4e79a7', 'Average Score (%)');
+}
+
+// 4. Average Score by Gender
+if (Object.keys(dataAvgByGender).length > 0) {
+    buildBarChart('genderChart', Object.keys(dataAvgByGender), Object.values(dataAvgByGender), '#af7aa1', 'Average Score (%)');
+}
+
+// 5. Average Score by Education
+if (Object.keys(dataAvgByEducation).length > 0) {
+    const eduLabels = Object.keys(dataAvgByEducation).map(k => k.length > 30 ? k.substring(0, 30) + '...' : k);
+    buildBarChart('educationChart', eduLabels, Object.values(dataAvgByEducation), '#76b7b2', 'Average Score (%)');
+}
+
+// 6. Education Counts
+if (Object.keys(dataEducationCounts).length > 0) {
+    const eduCountLabels = Object.keys(dataEducationCounts).map(k => k.length > 25 ? k.substring(0, 25) + '...' : k);
+    buildPieChart('educationCountsChart', eduCountLabels, Object.values(dataEducationCounts));
+}
+
+// 7. Year Counts
+if (Object.keys(dataYearCounts).length > 0) {
+    buildPieChart('yearCountsChart', Object.keys(dataYearCounts), Object.values(dataYearCounts));
+}
+
+// 8. Privacy Policy Reading
+if (Object.keys(dataPrivacyCounts).length > 0) {
+    buildPieChart('privacyChart', Object.keys(dataPrivacyCounts), Object.values(dataPrivacyCounts));
+}
+
+// 9. App Permissions
+if (Object.keys(dataPermissionsCounts).length > 0) {
+    buildPieChart('permissionsChart', Object.keys(dataPermissionsCounts), Object.values(dataPermissionsCounts));
+}
+
+// 10. Password Practices
+if (Object.keys(dataPasswordCounts).length > 0) {
+    buildPieChart('passwordChart', Object.keys(dataPasswordCounts), Object.values(dataPasswordCounts));
+}
+
+// 11. Uninstall Behavior
+if (Object.keys(dataUninstallCounts).length > 0) {
+    buildPieChart('uninstallChart', Object.keys(dataUninstallCounts), Object.values(dataUninstallCounts));
+}
+
+// 12. Social Media Permissions
+if (Object.keys(dataSocialPermsCounts).length > 0) {
+    buildPieChart('socialPermsChart', Object.keys(dataSocialPermsCounts), Object.values(dataSocialPermsCounts));
+}
+
+// 13. Privacy Settings Review
+if (Object.keys(dataPrivacySettingsCounts).length > 0) {
+    buildPieChart('privacySettingsChart', Object.keys(dataPrivacySettingsCounts), Object.values(dataPrivacySettingsCounts));
+}
+
+// 14. AI Mental Health
+if (Object.keys(dataAIMentalHealth).length > 0) {
+    buildPieChart('aiMentalHealthChart', Object.keys(dataAIMentalHealth), Object.values(dataAIMentalHealth));
+}
+
+// 15. AI Targeted Ads
+if (Object.keys(dataAITargetedAds).length > 0) {
+    buildPieChart('aiTargetedAdsChart', Object.keys(dataAITargetedAds), Object.values(dataAITargetedAds));
+}
+
+// 16. AI Tracking Comfort
+if (Object.keys(dataAITracking).length > 0) {
+    buildPieChart('aiTrackingChart', Object.keys(dataAITracking), Object.values(dataAITracking));
+}
+
+// 17. AI Accountability
+if (Object.keys(dataAIAccountability).length > 0) {
+    buildPieChart('aiAccountabilityChart', Object.keys(dataAIAccountability), Object.values(dataAIAccountability));
+}
+
+// 18. Knowledge Breakdown
+if (dataKnowledgeBreakdown && Object.keys(dataKnowledgeBreakdown).length > 0) {
+    const kbData = dataKnowledgeBreakdown;
+    const questions = Object.keys(kbData);
+    const correct = questions.map(q => kbData[q].correct || 0);
+    const total = questions.map(q => kbData[q].total || 0);
+    const percentages = questions.map((q, i) => total[i] > 0 ? ((correct[i] / total[i]) * 100).toFixed(1) : 0);
+    
+    new Chart(document.getElementById('knowledgeBreakdownChart'), {
+        type: 'bar',
+        data: {
+            labels: ['Incognito Mode', 'Anonymous Data', 'Social Media Messages'],
+            datasets: [{
+                label: 'Correct Answers (%)',
+                data: percentages,
+                backgroundColor: '#59a14f'
+            }]
+        },
+        options: {
+            responsive: true,
             scales: {
                 y: { beginAtZero: true, max: 100 }
             }
@@ -170,75 +549,34 @@ function buildBarChart(ctxId, labels, values, color='#4e79a7', horizontal=false)
     });
 }
 
-new Chart(document.getElementById('scoreDistributionChart'), {
-    type: 'doughnut',
-    data: {
-        labels: Object.keys(dataScoreDistribution),
-        datasets: [{
-            data: Object.values(dataScoreDistribution),
-            backgroundColor: palette.slice(0, 3)
-        }]
-    },
-    options: { responsive: true }
-});
-
-new Chart(document.getElementById('timelineChart'), {
-    type: 'line',
-    data: {
-        labels: dataTimeline.map(item => item.date),
-        datasets: [{
-            label: 'Average Knowledge Score',
-            data: dataTimeline.map(item => item.score),
-            borderColor: '#59a14f',
-            backgroundColor: 'rgba(89,161,79,0.2)',
-            tension: 0.3,
-            fill: true
-        }]
-    },
-    options: {
-        responsive: true,
-        scales: {
-            y: { beginAtZero: true, max: 100 }
+// 19. Timeline Chart
+if (dataTimeline && dataTimeline.length > 0) {
+    new Chart(document.getElementById('timelineChart'), {
+        type: 'line',
+        data: {
+            labels: dataTimeline.map(item => item.date),
+            datasets: [{
+                label: 'Average Knowledge Score (%)',
+                data: dataTimeline.map(item => item.score),
+                borderColor: '#59a14f',
+                backgroundColor: 'rgba(89,161,79,0.2)',
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, max: 100 }
+            }
         }
-    }
-});
+    });
+}
 
-buildBarChart('ageChart', Object.keys(dataAvgByAge), Object.values(dataAvgByAge), '#4e79a7');
-buildBarChart('genderChart', Object.keys(dataAvgByGender), Object.values(dataAvgByGender), '#af7aa1');
-
-new Chart(document.getElementById('privacyChart'), {
-    type: 'pie',
-    data: {
-        labels: Object.keys(dataPrivacyCounts),
-        datasets: [{
-            data: Object.values(dataPrivacyCounts),
-            backgroundColor: palette.slice(0, Object.keys(dataPrivacyCounts).length)
-        }]
-    }
-});
-
-new Chart(document.getElementById('permissionsChart'), {
-    type: 'pie',
-    data: {
-        labels: Object.keys(dataPermissionsCounts),
-        datasets: [{
-            data: Object.values(dataPermissionsCounts),
-            backgroundColor: palette.slice(0, Object.keys(dataPermissionsCounts).length)
-        }]
-    }
-});
-
-new Chart(document.getElementById('passwordChart'), {
-    type: 'pie',
-    data: {
-        labels: Object.keys(dataPasswordCounts),
-        datasets: [{
-            data: Object.values(dataPasswordCounts),
-            backgroundColor: palette.slice(0, Object.keys(dataPasswordCounts).length)
-        }]
-    }
-});
+// 20. Curriculum Opinion
+if (Object.keys(dataCurriculum).length > 0) {
+    buildPieChart('curriculumChart', Object.keys(dataCurriculum), Object.values(dataCurriculum));
+}
 </script>
 {% endif %}
 {% endblock %}
-
